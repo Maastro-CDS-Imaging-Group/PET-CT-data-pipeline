@@ -1,0 +1,6 @@
+# Data
+Data/*
+Sample data/*
+
+# Checkpoints
+.ipynb_checkpoints/*
