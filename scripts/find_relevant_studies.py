@@ -1,3 +1,10 @@
+"""
+Script to parse the dcm files in the Head-Neck-PET-CT dataset to find out relevant studies.
+Output:
+    - File containing paths to the relevant studies - i.e. studies containing both PET and CT series
+    - File containing information about outlier subjects - i.e. subjects with separate PET and CT studies.
+"""
+
 import os, argparse, json
 
 import numpy as np
@@ -34,11 +41,9 @@ def main(args):
 
     subject_IDs = sorted(os.listdir(args.data_dir))
 
-    # For each subject, identify the studies that contain both PET and CT series
-
     outlier_subjects_dict = {} # Subjects for whom PET and CT series do not exist within the same study
     
-
+    # Iterate over each subject (patient)
     for subject in subject_IDs:
         print("Checking subject: ", subject)
 
