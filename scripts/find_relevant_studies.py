@@ -1,7 +1,8 @@
 """
-Script to parse the dcm files in the Head-Neck-PET-CT dataset to find out relevant studies.
+Script to parse the dcm files in the Head-Neck-PET-CT dataset to find out relevant "studies"/patient sub-directories.
+Each study is assumed to be a separate folder inside the patient's directory. The study information is NOT obtained from the DICOM meta-data.
 Output:
-    - File containing paths to the relevant studies - i.e. studies containing both PET and CT series
+    - File containing paths to the relevant "studies" - i.e. directories containing both PET and CT series
     - File containing information about outlier subjects - i.e. subjects with separate PET and CT studies.
 """
 
@@ -17,22 +18,22 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--data_dir",
-                        type=str, 
-                        default="../Data/Head-Neck-PET-CT", 
+                        type=str,
+                        default="../Data/Head-Neck-PET-CT",
                         help="Path to the Head-Neck-PET-CT data")
-    
-    parser.add_argument("--output_file_1", 
-                        type=str, 
-                        default="./paths_to_relevant_studies.txt", 
+
+    parser.add_argument("--output_file_1",
+                        type=str,
+                        default="./paths_to_relevant_studies.txt",
                         help="Path to the primary ouput file to store the paths to relevant studies")
 
 
-    parser.add_argument("--output_file_2", 
-                        type=str, 
-                        default="./outlier_subjects.json", 
+    parser.add_argument("--output_file_2",
+                        type=str,
+                        default="./outlier_subjects.json",
                         help="Path to the ouput file to store outlier subjects info - i.e. subjects with separate PET and CT studies")
 
-    
+
     args = parser.parse_args()
     return args
 
@@ -41,8 +42,8 @@ def main(args):
 
     subject_IDs = sorted(os.listdir(args.data_dir))
 
-    outlier_subjects_dict = {} # Subjects for whom PET and CT series do not exist within the same study
-    
+    outlier_subjects_dict = {} # Patients for whom PET and CT series do not exist within the same sub-directory
+
     # Iterate over each subject (patient)
     for subject in subject_IDs:
         print("Checking subject: ", subject)
@@ -51,7 +52,7 @@ def main(args):
         studies = sorted(os.listdir(subject_dir))
 
         found_relevant_study = False
-        all_study_modalities = [] 
+        all_study_modalities = []
         for study in studies:
             study_dir = subject_dir + study + "/"
             list_of_series = sorted(os.listdir(study_dir))
