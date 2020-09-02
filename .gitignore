@@ -1,6 +1,8 @@
 # Data
-Data/*
+data/*
 
 # Checkpoints
-.ipynb_checkpoints
-Notebooks/.ipynb_checkpoints/*
+notebooks/.ipynb_checkpoints/*
+
+# Pycache
+data_utils/__pycache__/*

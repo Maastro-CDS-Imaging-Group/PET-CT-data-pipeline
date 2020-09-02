@@ -14,49 +14,72 @@ def read_dcm_series(series_dir):
         sitk_image: SimpleITK Image object
         meta: Python dictionary containing selected meta-data
     """
-    if len(os.listdir(series_dir)) > 1:
+    if len(os.listdir(series_dir)) > 1: # If multiple dcm files in the series (as is the case with CT and PET scans)
         reader = sitk.ImageSeriesReader()
         dcm_file_paths = reader.GetGDCMSeriesFileNames(series_dir)
         sitk_image = sitk.ReadImage(dcm_file_paths)
         dicom_data = pydicom.read_file(dcm_file_paths[0], stop_before_pixels=True)
     else:
         file_name = os.listdir(series_dir)[0]
-        sitk_image = sitk.ReadImage(series_dir + file_name)
+        sitk_image = None
         dicom_data = pydicom.read_file(series_dir + file_name, stop_before_pixels=True)
 
-    meta = {}
+    meta_dict = {}
 
-    meta['PatientID'] = dicom_data.PatientID
-    meta['StudyDescription'] = dicom_data.StudyDescription
-    meta['StudyInstanceUID'] = dicom_data.StudyInstanceUID
-    meta['SeriesDescription'] = dicom_data.SeriesDescription
-    meta['SeriesInstanceUID'] = dicom_data.SeriesInstanceUID
-    meta['Modality'] = dicom_data.Modality
+    meta_dict['PatientID'] = dicom_data.PatientID
+    meta_dict['StudyID'] = dicom_data.StudyID
+    meta_dict['StudyInstanceUID'] = dicom_data.StudyInstanceUID
+    meta_dict['Modality'] = dicom_data.Modality
 
-    meta['Pixel spacing'] = sitk_image.GetSpacing()
-    meta['Width'] = sitk_image.GetWidth()
-    meta['Height'] = sitk_image.GetHeight()
-    meta['Depth'] = sitk_image.GetDepth()
-    meta['Direction'] = sitk_image.GetDirection()
+    if dicom_data.Modality in ['PT', 'CT']:
+        # Using sitk to extract image mata-data
+        meta_dict['Spacing'] = sitk_image.GetSpacing()
+        meta_dict['Width'] = sitk_image.GetWidth()
+        meta_dict['Height'] = sitk_image.GetHeight()
+        meta_dict['Depth'] = sitk_image.GetDepth()
+        meta_dict['Direction'] = sitk_image.GetDirection()
 
-    return sitk_image, meta
+    if dicom_data.Modality == 'RTSTRUCT':
+        meta_dict['StructureSetLabel'] = dicom_data.StructureSetLabel
+        meta_dict['StructureSetName'] = dicom_data.StructureSetName
+
+    return sitk_image, meta_dict
 
 
 
-if __name__ == '__main__':
-        
-    study_dir_1 = "./Data/Head-Neck-PET-CT/HN-CHUS-009/08-27-1885-65886/"    
-    series_dir_1 = study_dir_1 + "517120.000000-LOR-RAMLA-54001/"
-    
-    study_dir_2 = "./Data/Head-Neck-PET-CT/HN-CHUS-009/08-27-1885-TEP cancerologique-77284/"
-    series_dir_2 = study_dir_2 + "3.000000-Merged-51326/"
-    
-    print("Series 1")
-    sitk_image_1, meta_1 = read_dcm_series(series_dir_1)
-    for k,v in meta_1.items():
-        print(k, ":", v)
+def read_image(file_path, print_meta=True, print_stats=False):
+    """
+    Read NIfTI/NRRD file to sitk image
+    """
+    sitk_image = sitk.ReadImage(file_path)
 
-    print("Series 2")
-    sitk_image_2, meta_2 = read_dcm_series(series_dir_2)
-    for k,v in meta_2.items():
-        print(k, ":", v)
+    if print_meta:
+        print("Loaded image:", file_path.split('/')[-1])
+        print("Patient ID:", file_path.split('/')[-1].split('_')[0])
+
+        if '_gtvt' in file_path:
+            modality = 'Binary GTV mask'
+            sitk_image = sitk.Cast(sitk_image, sitk.sitkUInt8)
+        elif '_ct' in file_path: modality = 'CT'
+        elif '_pt' in file_path: modality = 'PT'
+        print("Modality:", modality)
+
+        image_size = sitk_image.GetSize()
+        pixel_spacing = sitk_image.GetSpacing()
+        print("Image size:", image_size)
+        print("Pixel spacing (mm):", pixel_spacing)
+        print("Physical size (mm):", [image_size[i]*pixel_spacing[i] for i in range(3)])
+
+
+    if print_stats:
+        image_stats = sitk.StatisticsImageFilter()
+        image_stats.Execute(sitk_image)
+
+        print(f"\n----- Image Statistics ----- \n Max Intensity: {image_stats.GetMaximum()} \
+                \n Min Intensity: {image_stats.GetMinimum()} \n Mean: {image_stats.GetMean()} \
+                \n Variance: {image_stats.GetVariance()} \n")
+
+        #print("Components per pixel:", sitk_image.GetNumberOfComponentsPerPixel())
+
+    print("\n")
+    return sitk_image
