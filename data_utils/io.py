@@ -69,7 +69,7 @@ def read_image(file_path, print_meta=True, print_stats=False):
         print("Image size:", image_size)
         print("Pixel spacing (mm):", pixel_spacing)
         print("Physical size (mm):", [image_size[i]*pixel_spacing[i] for i in range(3)])
-
+        #print("Components per pixel:", sitk_image.GetNumberOfComponentsPerPixel())
 
     if print_stats:
         image_stats = sitk.StatisticsImageFilter()
@@ -78,8 +78,6 @@ def read_image(file_path, print_meta=True, print_stats=False):
         print(f"\n----- Image Statistics ----- \n Max Intensity: {image_stats.GetMaximum()} \
                 \n Min Intensity: {image_stats.GetMinimum()} \n Mean: {image_stats.GetMean()} \
                 \n Variance: {image_stats.GetVariance()} \n")
-
-        #print("Components per pixel:", sitk_image.GetNumberOfComponentsPerPixel())
 
     print("\n")
     return sitk_image

@@ -1,13 +1,100 @@
+import os, glob
+
 import numpy as np
 import matplotlib.pyplot as plt
 
 import SimpleITK as sitk
 
 
+#####################################################################################
+# I/O utils
+#####################################################################################
 
-#######################################################################################
-# To display sitk images - either individually or with sitk overlay
-#######################################################################################
+def read_image(file_path, print_meta=True, print_stats=False):
+    """
+    Read NIfTI/NRRD file to sitk image
+    """
+    sitk_image = sitk.ReadImage(file_path)
+
+    if print_meta:
+        print("Loaded image:", file_path.split('/')[-1])
+        print("Patient ID:", file_path.split('/')[-1].split('_')[0])
+
+        if '_gtvt' in file_path:
+            modality = 'Binary GTV mask'
+            sitk_image = sitk.Cast(sitk_image, sitk.sitkUInt8)
+        elif '_ct' in file_path: modality = 'CT'
+        elif '_pt' in file_path: modality = 'PT'
+        print("Modality:", modality)
+
+        image_size = sitk_image.GetSize()
+        pixel_spacing = sitk_image.GetSpacing()
+        print("Image size:", image_size)
+        print("Pixel spacing (mm):", pixel_spacing)
+        print("Physical size (mm):", [image_size[i]*pixel_spacing[i] for i in range(3)])
+        #print("Components per pixel:", sitk_image.GetNumberOfComponentsPerPixel())
+
+    if print_stats:
+        image_stats = sitk.StatisticsImageFilter()
+        image_stats.Execute(sitk_image)
+
+        print(f"\n----- Image Statistics ----- \n Max Intensity: {image_stats.GetMaximum()} \
+                \n Min Intensity: {image_stats.GetMinimum()} \n Mean: {image_stats.GetMean()} \
+                \n Variance: {image_stats.GetVariance()} \n")
+
+    print("\n")
+    return sitk_image
+
+
+#####################################################################################
+# Visualizatioon utils
+#####################################################################################
+
+
+def mask_image_multiply(mask, image):
+    components_per_pixel = image.GetNumberOfComponentsPerPixel()
+    if  components_per_pixel == 1:
+        return mask*image
+    else:
+        return sitk.Compose([mask*sitk.VectorIndexSelectionCast(image,channel) for channel in range(components_per_pixel)])
+
+def alpha_blend(image1, image2, alpha = 0.5, mask1=None,  mask2=None):
+    '''
+    Alpha blend two images, pixels can be scalars or vectors.
+    The alpha blending factor can be either a scalar or an image whose
+    pixel type is sitkFloat32 and values are in [0,1].
+    The region that is alpha blended is controled by the given masks.
+    '''
+
+    if not mask1:
+        mask1 = sitk.Image(image1.GetSize(), sitk.sitkFloat32) + 1.0
+        mask1.CopyInformation(image1)
+    else:
+        mask1 = sitk.Cast(mask1, sitk.sitkFloat32)
+    if not mask2:
+        mask2 = sitk.Image(image2.GetSize(),sitk.sitkFloat32) + 1
+        mask2.CopyInformation(image2)
+    else:
+        mask2 = sitk.Cast(mask2, sitk.sitkFloat32)
+    # if we received a scalar, convert it to an image
+    if type(alpha) != sitk.SimpleITK.Image:
+        alpha = sitk.Image(image1.GetSize(), sitk.sitkFloat32) + alpha
+        alpha.CopyInformation(image1)
+    components_per_pixel = image1.GetNumberOfComponentsPerPixel()
+    if components_per_pixel>1:
+        img1 = sitk.Cast(image1, sitk.sitkVectorFloat32)
+        img2 = sitk.Cast(image2, sitk.sitkVectorFloat32)
+    else:
+        img1 = sitk.Cast(image1, sitk.sitkFloat32)
+        img2 = sitk.Cast(image2, sitk.sitkFloat32)
+
+    intersection_mask = mask1*mask2
+
+    intersection_image = mask_image_multiply(alpha*intersection_mask, img1) + \
+                         mask_image_multiply((1-alpha)*intersection_mask, img2)
+    return intersection_image + mask_image_multiply(mask2-intersection_mask, img2) + \
+           mask_image_multiply(mask1-intersection_mask, img1)
+
 
 def display_image(sitk_image,
                   axial_idxs=[], coronal_idxs=[], sagittal_idxs=[],
@@ -113,60 +200,11 @@ def display_image_np(np_array, spacing, is_label=False,
         sitk_image = sitk.LabelToRGB(sitk_image) # Get RGB color mapping
 
     display_image(sitk_image,
-                  axial_slice_idxs=axial_slice_idxs,
-                  coronal_slice_idxs=coronal_slice_idxs,
-                  sagittal_slice_idxs=sagittal_slice_idxs,
-                  window_level=window_level, window_width=window_width
+                  axial_idxs=axial_idxs,
+                  coronal_idxs=coronal_idxs,
+                  sagittal_idxs=sagittal_idxs,
+                  window_level=window_level, window_width=window_width,
                   title=title)
-
-
-
-def mask_image_multiply(mask, image):
-    components_per_pixel = image.GetNumberOfComponentsPerPixel()
-    if  components_per_pixel == 1:
-        return mask*image
-    else:
-        return sitk.Compose([mask*sitk.VectorIndexSelectionCast(image,channel) for channel in range(components_per_pixel)])
-
-
-
-def alpha_blend(image1, image2, alpha = 0.5, mask1=None,  mask2=None):
-    '''
-    Alpha blend two images, pixels can be scalars or vectors.
-    The alpha blending factor can be either a scalar or an image whose
-    pixel type is sitkFloat32 and values are in [0,1].
-    The region that is alpha blended is controled by the given masks.
-    '''
-
-    if not mask1:
-        mask1 = sitk.Image(image1.GetSize(), sitk.sitkFloat32) + 1.0
-        mask1.CopyInformation(image1)
-    else:
-        mask1 = sitk.Cast(mask1, sitk.sitkFloat32)
-    if not mask2:
-        mask2 = sitk.Image(image2.GetSize(),sitk.sitkFloat32) + 1
-        mask2.CopyInformation(image2)
-    else:
-        mask2 = sitk.Cast(mask2, sitk.sitkFloat32)
-    # if we received a scalar, convert it to an image
-    if type(alpha) != sitk.SimpleITK.Image:
-        alpha = sitk.Image(image1.GetSize(), sitk.sitkFloat32) + alpha
-        alpha.CopyInformation(image1)
-    components_per_pixel = image1.GetNumberOfComponentsPerPixel()
-    if components_per_pixel>1:
-        img1 = sitk.Cast(image1, sitk.sitkVectorFloat32)
-        img2 = sitk.Cast(image2, sitk.sitkVectorFloat32)
-    else:
-        img1 = sitk.Cast(image1, sitk.sitkFloat32)
-        img2 = sitk.Cast(image2, sitk.sitkFloat32)
-
-    intersection_mask = mask1*mask2
-
-    intersection_image = mask_image_multiply(alpha*intersection_mask, img1) + \
-                         mask_image_multiply((1-alpha)*intersection_mask, img2)
-    return intersection_image + mask_image_multiply(mask2-intersection_mask, img2) + \
-           mask_image_multiply(mask1-intersection_mask, img1)
-
 
 
 def display_overlay_image(ct_sitk, pet_sitk=None, true_gtv_sitk=None, pred_gtv_sitk=None,
@@ -236,59 +274,6 @@ def display_overlay_image(ct_sitk, pet_sitk=None, true_gtv_sitk=None, pred_gtv_s
                    title=title)
 
 
-
-#######################################################################################
-# To display single CT, PET and GTV slices side-by-side
-#######################################################################################
-
-def display_slice(ct_slice_sitk, pet_slice_sitk,
-                       true_gtv_slice_sitk=None, pred_gtv_slice_sitk=None,
-                       title=None, dpi=100):
-    """
-    Display corresponding slices of CT, PET and GTV side-by-side.
-    Note: CT and PET need to have same size and spacing -- i.e. only resampled images should be used
-
-    """
-
-    n_inputs = 2
-
-    ct_slice_sitk = sitk.Cast(sitk.IntensityWindowing(ct_slice_sitk, windowMinimum=-200, windowMaximum=600,
-                                                       outputMinimum=0.0, outputMaximum=255.0), sitk.sitkUInt8)
-    pet_slice_sitk = sitk.Cast(sitk.IntensityWindowing(pet_slice_sitk, windowMinimum=0, windowMaximum=10,
-                                                       outputMinimum=0.0, outputMaximum=255.0), sitk.sitkUInt8)
-
-
-    ct_slice_np = sitk.GetArrayFromImage(ct_slice_sitk)
-    pet_slice_np = sitk.GetArrayFromImage(pet_slice_sitk)
-    if true_gtv_slice_sitk:
-        true_gtv_slice_sitk = true_gtv_slice_sitk * 255
-        true_gtv_slice_np = sitk.GetArrayFromImage(true_gtv_slice_sitk)
-        n_inputs += 1
-    if pred_gtv_slice_sitk:
-        pred_gtv_slice_sitk = pred_gtv_slice_sitk * 255
-        pred_gtv_slice_np = sitk.GetArrayFromImage(pred_gtv_slice_sitk)
-        n_inputs += 1
-
-
-    spacing = ct_slice_sitk.GetSpacing() # Get pixel spacing of the slice
-    extent = (0, ct_slice_np.shape[0]*spacing[1], ct_slice_np.shape[1]*spacing[0], 0)
-    figsize = (n_inputs*5,5)
-    #figsize = (n_inputs*ct_slice_np.shape[1]/dpi, n_images*ct_slice_np.shape[0]/dpi)
-
-    fig, axs = plt.subplots(nrows=1, ncols=n_inputs, figsize=figsize)
-
-    axs[0].imshow(ct_slice_np, extent=extent, interpolation=None, cmap='gray')
-    axs[0].set_title("CT")
-    axs[1].imshow(pet_slice_np, extent=extent, interpolation=None, cmap='gray')
-    axs[1].set_title("PET")
-
-    if true_gtv_slice_sitk:
-        axs[2].imshow(true_gtv_slice_np, extent=extent, interpolation=None, cmap='gray')
-        axs[2].set_title("Actual GTV")
-    if pred_gtv_slice_sitk:
-        axs[3].imshow(pred_gtv_slice_np, extent=extent, interpolation=None, cmap='gray')
-        axs[3].set_title("Predicted GTV")
-
-    for ax in axs: ax.axis('off')
-    if title: fig.suptitle(title, fontsize='x-large')
-    plt.show()
+#####################################################################################
+# Post-processing utils
+#####################################################################################
