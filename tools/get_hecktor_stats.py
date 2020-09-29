@@ -1,24 +1,48 @@
 """
 Obtain counts for voxel spacing and array sizes for all *original* CT and PET images form HECKTOR dataset.
-This information is mainly to be used for getting an overview of the original data and for finding the best voxel spacing for resampling. 
 """
 
 import os
 import numpy as np
 from tqdm import tqdm
-import json
-
-import matplotlib.pyplot as plt
+import argparse
 
 import SimpleITK as sitk
 
 
-def main(hecktor_dir, dataset='train', output_dir=None):
+def get_args():
+    parser = argparse.ArgumentParser()
 
-	if dataset == 'train':
-		data_dir = f"{hecktor_dir}/hecktor_train/hecktor_nii"
-	elif dataset == 'test':
-		data_dir = f"{hecktor_dir}/hecktor_test/hecktor_nii_test"
+    parser.add_argument("--data_dir", 
+                        type=str, 
+                        default="../../../Datasets/HECKTOR/hecktor_train/resampled113_hecktor_nii",
+                        help="Directory containing patient folders"
+                        )
+
+    parser.add_argument("--output_dir", 
+                        type=str, 
+                        default="./outputs",
+                        help="Directory to store the results"
+                        )
+
+    parser.add_argument("--dataset", 
+                        type=str,
+                        required=True,
+                        help="train, test, train_rsWHD, test_rsWHD"
+                        )
+
+    args = parser.parse_args()
+    return args
+
+
+def main(args):
+	
+	data_dir = args.data_dir
+	dataset = args.dataset
+	output_dir = args.output_dir
+
+	if dataset == 'train' or dataset == 'test': file_extension = ".nii.gz"
+	else: file_extension = ".nrrd"
 	
 	patient_ids = sorted(os.listdir(data_dir))
 	print("Patients found:", len(patient_ids))
@@ -37,7 +61,7 @@ def main(hecktor_dir, dataset='train', output_dir=None):
 	for p_id in tqdm(patient_ids):
 
 		# For CT -------------------------------
-		ct_img_path = f"{data_dir}/{p_id}/{p_id}_ct.nii.gz"
+		ct_img_path = f"{data_dir}/{p_id}/{p_id}_ct{file_extension}"
 		ct_sitk = sitk.ReadImage(ct_img_path)
 
 		# Spacing
@@ -66,7 +90,7 @@ def main(hecktor_dir, dataset='train', output_dir=None):
 		
 
 		# For PET -------------------------------
-		pet_img_path = f"{data_dir}/{p_id}/{p_id}_pt.nii.gz"
+		pet_img_path = f"{data_dir}/{p_id}/{p_id}_pt{file_extension}"
 		pet_sitk = sitk.ReadImage(pet_img_path)
 		
 		# Spacing
@@ -108,14 +132,7 @@ def main(hecktor_dir, dataset='train', output_dir=None):
 		of.write(f"PET n-slices counts: {pet_n_slices_counts}")
 
 
-
+# ------------------------------------------------
 if __name__ == '__main__':
-
-	hecktor_dir = "/home/zk315372/Chinmay/Datasets/HECKTOR"
-
-	# For train data
-	main(hecktor_dir, dataset='train', output_dir="./outputs")
-
-	# For test data
-	main(hecktor_dir, dataset='test', output_dir="./outputs")
-	
+	args = get_args()
+	main(args)
