@@ -1,5 +1,8 @@
 """
-Script for resampling and cropping the images
+Script for cropping the images and resamping them.
+Physical coordinates for cropping are obtained from the bounding box CSV file. 
+Resampling is performed based on given voxel spacing.
+
 Adapted from github.com/voreille/hecktor
 
         This command line interface allows to resample NIFTI files within a
@@ -29,7 +32,7 @@ from scipy.interpolate import RegularGridInterpolator
 import SimpleITK as sitk
 
 
-from resampling import Resampler, get_sitk_volume_from_np, get_np_volume_from_sitk
+from hktr_resampling import Resampler, get_sitk_volume_from_np, get_np_volume_from_sitk
 
 # Constants
 DEFAULT_SOURCE_DIR = "../../../Datasets/HECKTOR/hecktor_train/hecktor_nii"

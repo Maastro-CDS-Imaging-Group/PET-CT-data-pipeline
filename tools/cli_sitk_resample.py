@@ -1,6 +1,8 @@
 """
+
 Resamples all images from the given HECKTOR subset (train or test) to a given voxel spacing and 
 writes them in new directory.
+
 """
 
 import os

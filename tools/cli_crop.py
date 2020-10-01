@@ -1,5 +1,6 @@
 """
-Performs cropping all images from a given directory and stores them in a new directory 
+
+Performs cropping on all images from a given directory and stores them in a new directory 
 
     - Crops away slices based on the following rules:
         1. Overhead space -- For a patient, use PET to find if there's background space over the patients head. 
@@ -13,6 +14,7 @@ Performs cropping all images from a given directory and stores them in a new dir
                                                                             crop the extra parts away measuring 
                                                                             from the x-y plane's centre. 
 
+TODO Finish the script, if needed. Or delete it
 """
 
 import os
@@ -71,61 +73,3 @@ def get_args():
     args = parser.parse_args()
     return args
 
-
-
-# TODO Modify main()
-
-def main(args):
-
-    new_spacing = [float(s) for s in args.new_spacing]
-    source_dir = Path(args.source_dir)
-    target_dir = Path(args.target_dir)
-
-    patient_ids = [str(dir_path).split('/')[-1] \
-                   for dir_path in sorted(list(source_dir.glob("*/")))]
-
-    print("Total patients found:", len(patient_ids))
-
-    for p_id in tqdm(patient_ids):
-        source_patient_dir = source_dir / Path(p_id)
-
-        # CT
-        ct_sitk = sitk.ReadImage(f"{source_patient_dir}/{p_id}_ct.nii.gz")
-        ct_resampled_sitk = resample_sitk_image(ct_sitk, 
-                                                new_spacing, 
-                                                sitk_interpolator=SITK_INTERPOLATOR_DICT['linear'], 
-                                                default_fill_value=DEFAULT_IMG_VOXEL_VALUE)
-        
-        # PET
-        pet_sitk = sitk.ReadImage(f"{source_patient_dir}/{p_id}_pt.nii.gz")
-        pet_resampled_sitk = resample_sitk_image(pet_sitk, 
-                                                 new_spacing, 
-                                                 sitk_interpolator=SITK_INTERPOLATOR_DICT['linear'], 
-                                                 default_fill_value=DEFAULT_IMG_VOXEL_VALUE)
-
-        # GTV mask
-        gtv_sitk = sitk.ReadImage(f"{source_patient_dir}/{p_id}_ct_gtvt.nii.gz")
-        gtv_resampled_sitk = resample_sitk_image(gtv_sitk, 
-                                                 new_spacing, 
-                                                 sitk_interpolator=SITK_INTERPOLATOR_DICT['nearest'], 
-                                                 default_fill_value=DEFAULT_GTV_VOXEL_VALUE)
-
-        # Write into target directory
-        target_patient_dir = Path(f"{target_dir}/{p_id}")
-        target_patient_dir.mkdir(parents=True, exist_ok=True)
-
-        ct_resampled_path = target_patient_dir / Path(f"{p_id}_ct.nrrd")
-        sitk.WriteImage(ct_resampled_sitk, str(ct_resampled_path), useCompression=True)
-
-        pet_resampled_path = target_patient_dir / Path(f"{p_id}_pt.nrrd")
-        sitk.WriteImage(pet_resampled_sitk, str(pet_resampled_path), useCompression=True)
-        
-        gtv_resampled_path = target_patient_dir / Path(f"{p_id}_ct_gtvt.nrrd")
-        sitk.WriteImage(gtv_resampled_sitk, str(gtv_resampled_path), useCompression=True)
-        
-
-
-# ------------------------------------------------
-if __name__ == '__main__':
-    args = get_args()
-    main(args)

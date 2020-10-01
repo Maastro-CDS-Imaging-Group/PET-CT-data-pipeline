@@ -1,8 +1,12 @@
 """
+
 Script to automatically generate bounding boxes of given *physical* size by performing 
 brain segmentation in PET using SUV thresholding.
 
 Modified to contain full head (FH).
+
+Adapted from github.com/voreille/hecktor
+
 """
 
 import os, argparse
