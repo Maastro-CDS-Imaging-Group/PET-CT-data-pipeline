@@ -2,7 +2,8 @@ import numpy as np
 
 import torch
 
-class hecktorDataset(torch.utils.data.Dataset):
+
+class HECKTORCroppedFH(torch.utils.data.Dataset):
 	def __init__(self):
 		pass
 

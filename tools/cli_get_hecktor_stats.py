@@ -10,25 +10,45 @@ import argparse
 import SimpleITK as sitk
 
 
+# Constants
+DEFAULT_DATA_DIR = "../../../Datasets/HECKTOR/hecktor_train/hecktor_nii"
+DEFAULT_PATIENT_ID_FILE = "../hecktor_meta/patient_IDs_train.txt"
+DEFAULT_OUTPUT_FILE = "../hecktor_meta/hecktor_train_stats.txt"
+DEFAULT_HAS_SUBDIRS = 1
+DEFAULT_DATA_INFO = "train"
+
+
 def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--data_dir", 
                         type=str, 
-                        default="../../../Datasets/HECKTOR/hecktor_train/resampled113_hecktor_nii",
+                        default=DEFAULT_DATA_DIR,
                         help="Directory containing patient folders"
                         )
-
-    parser.add_argument("--output_dir", 
+	
+    parser.add_argument("--patient_id_file", 
                         type=str, 
-                        default="./outputs",
-                        help="Directory to store the results"
+                        default=DEFAULT_PATIENT_ID_FILE,
+                        help="File containing patient IDs"
                         )
 
-    parser.add_argument("--dataset", 
-                        type=str,
-                        required=True,
-                        help="train, test, train_rsWHD, test_rsWHD"
+    parser.add_argument("--output_file", 
+                        type=str, 
+                        default=DEFAULT_OUTPUT_FILE,
+                        help="File to store the results"
+                        )
+
+    parser.add_argument("--has_subdirs", 
+                        type=int,
+                        default=DEFAULT_HAS_SUBDIRS,
+                        help="1, if patient dirs exist. 0, otherwise."
+                        )
+
+    parser.add_argument("--data_info", 
+                        type=int,
+                        default=DEFAULT_DATA_INFO,
+                        help="Options: train, test, crFH_rs113_train, crFH_rs113_test, etc."
                         )
 
     args = parser.parse_args()
@@ -38,14 +58,16 @@ def get_args():
 def main(args):
 	
 	data_dir = args.data_dir
-	dataset = args.dataset
+	patient_id_file = args.patient_id_file
+	data_info = args.data_info
 	output_dir = args.output_dir
+	has_subdirs = args.has_subdirs == 1
 
-	if dataset == 'train' or dataset == 'test': file_extension = ".nii.gz"
-	else: file_extension = ".nrrd"
-	
-	patient_ids = sorted(os.listdir(data_dir))
-	print("Patients found:", len(patient_ids))
+	with open(patient_id_file, 'r') as pf:
+		patient_ids = [p_id for p_id in pf.read().split("\n") if p_id != "\n"]
+
+	# patient_ids = sorted(os.listdir(data_dir))
+	# print("Patients found:", len(patient_ids))
 
 	ct_xy_spacing_counts = {}
 	ct_z_spacing_counts = {}
@@ -61,7 +83,11 @@ def main(args):
 	for p_id in tqdm(patient_ids):
 
 		# For CT -------------------------------
-		ct_img_path = f"{data_dir}/{p_id}/{p_id}_ct{file_extension}"
+		if has_subdirs:
+			ct_img_path = f"{data_dir}/{p_id}/{p_id}_ct.nii.gz"
+		else:
+			ct_img_path = f"{data_dir}/{p_id}_ct.nii.gz"
+
 		ct_sitk = sitk.ReadImage(ct_img_path)
 
 		# Spacing
@@ -90,7 +116,11 @@ def main(args):
 		
 
 		# For PET -------------------------------
-		pet_img_path = f"{data_dir}/{p_id}/{p_id}_pt{file_extension}"
+		if has_subdirs:
+			pet_img_path = f"{data_dir}/{p_id}/{p_id}_pt.nii.gz"
+		else:
+			pet_img_path = f"{data_dir}/{p_id}_pt.nii.gz"
+
 		pet_sitk = sitk.ReadImage(pet_img_path)
 		
 		# Spacing
@@ -119,9 +149,9 @@ def main(args):
 
 
 	# Write results into file
-	output_stats_filepath = f"{output_dir}/hecktor_{dataset}_stats.txt"
-	with open(output_stats_filepath, 'w') as of:
-		of.write(f"Dataset: {dataset}\n\n")
+	# output_stats_filepath = f"{output_dir}/hecktor_{dataset}_stats.txt"
+	with open(args.output_file, 'w') as of:
+		of.write(f"Dataset: {data_info}\n\n")
 		of.write(f"CT x-y spacing counts: {ct_xy_spacing_counts}\n")
 		of.write(f"CT z spacing counts: {ct_z_spacing_counts}\n")
 		of.write(f"CT x-y size counts: {ct_xy_size_counts}\n")

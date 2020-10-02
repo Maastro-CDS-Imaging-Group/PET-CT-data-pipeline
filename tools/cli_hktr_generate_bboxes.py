@@ -22,7 +22,7 @@ from scipy.ndimage.measurements import label
 
 # Constants
 DEFAULT_SOURCE_DIR = "../../../Datasets/HECKTOR/hecktor_train/hecktor_nii"
-DEFAULT_BB_FILEPATH = "./outputs/bboxes_FH.csv"
+DEFAULT_BB_FILEPATH = "../heck_meta/bboxes_train_FH.csv"
 DEFAULT_PHY_SIZE = [450.0, 450.0, 300.0] 
 
 
