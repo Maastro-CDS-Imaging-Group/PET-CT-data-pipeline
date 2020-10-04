@@ -98,19 +98,18 @@ def alpha_blend(image1, image2, alpha = 0.5, mask1=None,  mask2=None):
 
 def display_image(sitk_image,
                   axial_idxs=[], coronal_idxs=[], sagittal_idxs=[],
-                  window_level = None, window_width = None,
-                  title=None):
-    """
-    TODO: Add feature to display slices along only 1 or 2 axes
-    """
+                  window = None,
+                  title=None,
+                  cmap='gray'):
+
 
     spacing = sitk_image.GetSpacing()
 
 
-    if window_level != None and window_width != None:
+    if window is not None:
         # Apply window and change scan image scale to 0-255
-        window_min = window_level - window_width//2
-        window_max = window_level + window_width//2
+        window_min = window['level'] - window['width']//2
+        window_max = window['level'] + window['width']//2
         sitk_image = sitk.Cast(sitk.IntensityWindowing(sitk_image, windowMinimum=window_min, windowMaximum=window_max,
                                                        outputMinimum=0.0, outputMaximum=255.0), sitk.sitkUInt8)
 
@@ -133,7 +132,7 @@ def display_image(sitk_image,
     n_rows = image2d.shape[0] # #rows of the 2d array - corresponds to sitk image height
     n_cols = image2d.shape[1] # #columns of the 2d array - corresponds to sitk image width
     extent = (0, len(axial_idxs)*n_cols*spacing[0], n_rows*spacing[1], 0)
-    ax1.imshow(axial_slices, extent=extent, interpolation=None, cmap='gray')
+    ax1.imshow(axial_slices, extent=extent, interpolation=None, cmap=cmap)
     ax1.set_title(f"Axial slices: {axial_idxs}")
     ax1.axis('off')
 
@@ -151,7 +150,7 @@ def display_image(sitk_image,
     n_rows = image2d.shape[0] # #rows of the 2d array - corresponds to sitk image depth
     n_cols = image2d.shape[1] # #columns of the 2d array - corresponds to sitk image width
     extent = (0, len(coronal_idxs)*n_cols*spacing[0], n_rows*spacing[2], 0)
-    ax2.imshow(coronal_slices, extent=extent, interpolation=None, cmap='gray')
+    ax2.imshow(coronal_slices, extent=extent, interpolation=None, cmap=cmap)
     ax2.set_title(f"Coronal slices: {coronal_idxs}")
     ax2.axis('off')
 
@@ -170,7 +169,7 @@ def display_image(sitk_image,
     n_rows = image2d.shape[0] # #rows of the 2d array - corresponds to sitk image depth
     n_cols = image2d.shape[1] # #columns of the 2d array - corresponds to sitk image height
     extent = (0, len(sagittal_idxs)*n_cols*spacing[1], n_rows*spacing[2], 0)
-    ax3.imshow(sagittal_slices, extent=extent, interpolation=None, cmap='gray')
+    ax3.imshow(sagittal_slices, extent=extent, interpolation=None, cmap=cmap)
     ax3.set_title(f"Sagittal slices: {sagittal_idxs}")
     ax3.axis('off')
 
@@ -180,11 +179,10 @@ def display_image(sitk_image,
 
 
 def display_image_np(np_array, spacing, is_label=False,
-                     axial_idxs=[],
-                     coronal_idxs=[],
-                     sagittal_idxs=[],
-                     window_level = None, window_width = None,
-                     title=None):
+                     axial_idxs=[], coronal_idxs=[], sagittal_idxs=[],
+                     window=None,
+                     title=None,
+                     cmap='gray'):
 
     """
     Wrapper over our display_image() function
@@ -203,34 +201,33 @@ def display_image_np(np_array, spacing, is_label=False,
                   axial_idxs=axial_idxs,
                   coronal_idxs=coronal_idxs,
                   sagittal_idxs=sagittal_idxs,
-                  window_level=window_level, window_width=window_width,
-                  title=title)
+                  window=window,
+                  title=title,
+                  cmap=cmap)
 
 
-def display_overlay_image(ct_sitk, pet_sitk=None, true_gtv_sitk=None, pred_gtv_sitk=None,
+def display_overlay_image(ct_sitk, pet_sitk=None,
+						  true_gtv_sitk=None, pred_gtv_sitk=None,
                            axial_idxs=[], coronal_idxs=[], sagittal_idxs=[],
-                           ct_window_level=None, ct_window_width=None,
-                           pet_window_level=None, pet_window_width=None,
+                           ct_window=None, pet_window=None,
                            gtv_as_contour=False,
                            pet_ct_alpha=0.3, gtv_opacity=0.5,
-                           title=None):
+                           title=None,
+                           cmap='gray'):
 
     # Apply window and change scan image scale to 0-255
-    if ct_window_level != None and ct_window_width != None:
-
-        ct_window_min = ct_window_level - ct_window_width//2
-        ct_window_max = ct_window_level + ct_window_width//2
+    if ct_window is not None:
+        ct_window_min = ct_window['level'] - ct_window['width']//2
+        ct_window_max = ct_window['level'] + ct_window['width']//2
         ct_sitk = sitk.Cast(sitk.IntensityWindowing(ct_sitk,
                                                     windowMinimum=ct_window_min, windowMaximum=ct_window_max,
                                                     outputMinimum=0.0, outputMaximum=255.0), sitk.sitkUInt8)
 
    # Apply window and change scan image scale to 0-255
     if pet_sitk != None:
-
-        if pet_window_level != None and pet_window_width != None:
-
-            pet_window_min = pet_window_level - pet_window_width//2
-            pet_window_max = pet_window_level + pet_window_width//2
+        if pet_window is not None:
+            pet_window_min = pet_window['level'] - pet_window['width']//2
+            pet_window_max = pet_window['level'] + pet_window['width']//2
             pet_sitk = sitk.Cast(sitk.IntensityWindowing(pet_sitk,
                                                          windowMinimum=pet_window_min, windowMaximum=pet_window_max,
                                                          outputMinimum=0.0, outputMaximum=255.0), sitk.sitkUInt8)
@@ -270,8 +267,9 @@ def display_overlay_image(ct_sitk, pet_sitk=None, true_gtv_sitk=None, pred_gtv_s
                    axial_idxs=axial_idxs,
                    coronal_idxs=coronal_idxs,
                    sagittal_idxs=sagittal_idxs,
-                   window_level=None, window_width=None,
-                   title=title)
+                   window=None,
+                   title=title,
+                   cmap=cmap)
 
 
 #####################################################################################
