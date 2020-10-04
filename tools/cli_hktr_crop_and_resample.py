@@ -37,7 +37,7 @@ from hktr_resampling import Resampler, get_sitk_volume_from_np, get_np_volume_fr
 # Constants
 DEFAULT_SOURCE_DIR = "../../../Datasets/HECKTOR/hecktor_train/hecktor_nii"
 DEFAULT_TARGET_DIR = "../../../Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
-DEFAULT_BB_FILEPATH = "../heck_meta/bboxes_train_FH.csv"
+DEFAULT_BB_FILEPATH = "../hecktor_meta/bboxes_train_FH.csv"
 DEFAULT_NEW_SPACING = [1.0, 1.0, 3.0]  # New spacing to resample to in mm -- (W,H,D) format
 DEFAULT_CORES = 24
 DEFAULT_ORDER = 3
@@ -55,6 +55,7 @@ def get_args():
     parser.add_argument("--target_dir", 
                         type=str, 
                         default=DEFAULT_TARGET_DIR,
+                        required=True,
                         help="Directory containing patient folders"
                         )
 

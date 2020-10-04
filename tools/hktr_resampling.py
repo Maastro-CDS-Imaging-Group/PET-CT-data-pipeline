@@ -28,7 +28,11 @@ class Resampler():
         # if not os.path.exists(patient_folder):
         #     os.mkdir(patient_folder)
         # output_file = os.path.join(patient_folder, f.split('/')[-1])
+        
         output_file = os.path.join(self.output_folder, f.split('/')[-1])
+        # if output_file.endswith(".nii.gz"):
+        #     output_file = output_file.replace(".nii.gz", ".nrrd")
+        
         bb = (self.bb_df.loc[patient_name, 'x1'], self.bb_df.loc[patient_name,
                                                                  'y1'],
               self.bb_df.loc[patient_name, 'z1'], self.bb_df.loc[patient_name,
@@ -73,10 +77,11 @@ def resample_and_crop(input_file,
 
     origin = np.asarray([bounding_box[0], bounding_box[1], bounding_box[2]])
     sitk_volume = get_sitk_volume_from_np(np_volume, resampling, origin)
-    writer = sitk.ImageFileWriter()
-    writer.SetFileName(output_file)
-    writer.SetImageIO("NiftiImageIO")
-    writer.Execute(sitk_volume)
+    # writer = sitk.ImageFileWriter()
+    # writer.SetFileName(output_file)
+    # writer.SetImageIO("NiftiImageIO")
+    # writer.Execute(sitk_volume)
+    sitk.WriteImage(sitk_volume, output_file, useCompression=True)
 
 
 def resample_np_volume(np_volume,

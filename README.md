@@ -1,19 +1,26 @@
 # Data exploration notebooks, conversion scripts and utilities for PET-CT data
 
+## Steps involved
+
+### Preparing the data
+
+1. Set a required physical volume size starting from the top (of the head) for the scans. Physical volume used is (450 x 450 x 300) mm3 in the (W,H,D) format. Generate bounding boxes of this size for each image and store them in a CSV file. Codename used for the outputs (and related items) of this step is "crFH" (crop with Full Head).
+
+2. Resample to a specific resolution. The voxel spacing used is 1mm x 1mm x 3mm, i.e. inplane resolution of 1mm x 1mm and a slice thickness of 3mm. Codename used for the outputs (and related items) of this step is "rs113" (resampled to 1x1x3).
+
+
+
+------------
 
 ## Libraries for IO and data processing
 
 - For DICOM: [Pydicom](https://pydicom.github.io/)
-- For NIfTI:  [Nibabel](https://nipy.org/nibabel/)
-- For NRRD: [Pynrrd](https://pynrrd.readthedocs.io/en/latest/)
 - For multiple formats: [SimpleITK](https://simpleitk.org/) - Complete toolkit for N-dim scientific image-processing
 
 
 ## Software tools
 
-- 3D Slicer
-- [Plastimatch](https://www.plastimatch.org/index.html)
-- dcm2niix - DICOM to NIfTI conversion tool
+- [3D Slicer](https://www.slicer.org/)
 
 
 ## Resources

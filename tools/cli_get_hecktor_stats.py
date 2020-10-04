@@ -1,5 +1,7 @@
 """
+
 Obtain counts for voxel spacing and array sizes for all *original* CT and PET images form HECKTOR dataset.
+
 """
 
 import os
@@ -46,9 +48,9 @@ def get_args():
                         )
 
     parser.add_argument("--data_info", 
-                        type=int,
+                        type=str,
                         default=DEFAULT_DATA_INFO,
-                        help="Options: train, test, crFH_rs113_train, crFH_rs113_test, etc."
+                        help="Options: train, test, train_crFH_rs113, test_crFH_rs113, etc."
                         )
 
     args = parser.parse_args()
@@ -60,11 +62,10 @@ def main(args):
 	data_dir = args.data_dir
 	patient_id_file = args.patient_id_file
 	data_info = args.data_info
-	output_dir = args.output_dir
 	has_subdirs = args.has_subdirs == 1
 
 	with open(patient_id_file, 'r') as pf:
-		patient_ids = [p_id for p_id in pf.read().split("\n") if p_id != "\n"]
+		patient_ids = [p_id for p_id in pf.read().split("\n") if p_id != ""]
 
 	# patient_ids = sorted(os.listdir(data_dir))
 	# print("Patients found:", len(patient_ids))
