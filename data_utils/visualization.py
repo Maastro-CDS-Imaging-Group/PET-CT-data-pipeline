@@ -1,7 +1,104 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+import scipy.ndimage
 import SimpleITK as sitk
+
+
+#######################################################################################
+# Visualizer class for ndimages
+#######################################################################################
+class NdimageVisualizer():
+    def __init__(self):
+        # Everything in sitk (W,H,D) format
+        self.spacing = (1.0, 1.0, 3.0)
+        self.array_size = (450, 450, 100)
+        self.phy_size = [int(self.array_size[i]*self.spacing[i]) for i in range(3)]
+
+        self.pet_window = {'level':3, 'width':5}
+        self.ct_window = {'level':0, 'width':300}
+
+        self.cmap_dict = {'PET': 'gist_rainbow', 'CT': 'gray', 'label map': 'gray'}
+        self.dpi = 80
+
+
+    def _apply_window(self, strip, modality):
+        if modality == 'PET':
+            window = self.pet_window = {'level':3, 'width':5}
+        if modality == 'CT':
+            window = self.ct_window = {'level':0, 'width':300}
+        win_min = window['level'] - window['width'] // 2
+        win_max = window['level'] + window['width'] // 2
+        strip[strip < win_min] = win_min
+        strip[strip > win_max] = win_max
+        return strip
+
+
+    def _custom_imshow(self, ax, image, title, cmap):
+        ax.imshow(image, cmap=cmap)
+        ax.set_title(title)
+        ax.axis('off')
+
+
+    def multi_image_strips(self, image_np_list, modalities, idx_range, view='axial', subtitles=[], title=""):
+        n_images = len(image_np_list)
+        figsize = (n_images*450)/self.dpi, ((idx_range[1]-idx_range[0])*450)/self.dpi
+        fig, axs = plt.subplots(1, n_images, figsize=figsize)
+
+        if len(subtitles) != n_images: subtitles = modalities
+
+        if view == 'axial':
+            for i, image_np in enumerate(image_np_list):
+                image_np = image_np.transpose((2,1,0)) # Convert to sitk (W,H,D) dim ordering
+                strip_size_horiz = self.phy_size[0]
+                strip_size_vert = (idx_range[1]-idx_range[0]) * self.phy_size[1]
+                strip = np.zeros((strip_size_vert, strip_size_horiz))
+                for j, s in enumerate(range(*idx_range)):
+                    y1, y2 = j*self.phy_size[1], j*self.phy_size[1] + self.phy_size[1]
+                    axial_slice = image_np[:, :, s].T
+                    strip[y1:y2, :] = axial_slice
+                strip = self._apply_window(strip, modalities[i])
+                self._custom_imshow(axs[i], strip, title=subtitles[i], cmap=self.cmap_dict[modalities[i]])
+
+        if view == 'coronal':
+            for i, image_np in enumerate(image_np_list):
+                image_np = image_np.transpose((2,1,0)) # Convert to sitk (W,H,D) dim ordering
+                strip_size_horiz = self.phy_size[0]
+                strip_size_vert = (idx_range[1]-idx_range[0]) * self.phy_size[2]
+                strip = np.zeros((strip_size_vert, strip_size_horiz))
+                for j, s in enumerate(range(*idx_range)):
+                    y1, y2 = j*self.phy_size[2], j*self.phy_size[2] + self.phy_size[2]
+                    coronal_slice = image_np[:, s, :]
+                    coronal_slice = scipy.ndimage.rotate(coronal_slice, 90)
+                    coronal_slice = np.flip(coronal_slice, axis=1)
+                    coronal_slice = scipy.ndimage.zoom(coronal_slice, [3,1], order=1)
+                    strip[y1:y2, :] = coronal_slice
+                strip = self._apply_window(strip, modalities[i])
+                self._custom_imshow(axs[i], strip, title=subtitles[i], cmap=self.cmap_dict[modalities[i]])
+
+        if view == 'sagittal':
+            for i, image_np in enumerate(image_np_list):
+                image_np = image_np.transpose((2,1,0)) # Convert to sitk (W,H,D) dim ordering
+                strip_size_horiz = self.phy_size[1]
+                strip_size_vert = (idx_range[1]-idx_range[0]) * self.phy_size[2]
+                strip = np.zeros((strip_size_vert, strip_size_horiz))
+                for j, s in enumerate(range(*idx_range)):
+                    x1, x2 = i*self.phy_size[1], i*self.phy_size[1] + self.phy_size[1]
+                    y1, y2 = j*self.phy_size[2], j*self.phy_size[2] + self.phy_size[2]
+                    sagittal_slice = image_np[s, :, :]
+                    sagittal_slice = scipy.ndimage.rotate(sagittal_slice, 90)
+                    sagittal_slice = scipy.ndimage.zoom(sagittal_slice, [3,1], order=1)
+                    strip[y1:y2, :] = sagittal_slice
+                strip = self._apply_window(strip, modalities[i])
+                self._custom_imshow(axs[i], strip, title=subtitles[i], cmap=self.cmap_dict[modalities[i]])
+
+        # Display
+        fig.suptitle(title)
+        plt.show()
+
+
+    def tile(image_np, idx_range, view='axial'):
+        # TODO
+        pass
 
 
 
@@ -116,7 +213,7 @@ def display_image_np(np_array, spacing, is_label=False,
                   axial_slice_idxs=axial_slice_idxs,
                   coronal_slice_idxs=coronal_slice_idxs,
                   sagittal_slice_idxs=sagittal_slice_idxs,
-                  window_level=window_level, window_width=window_width
+                  window_level=window_level, window_width=window_width,
                   title=title)
 
 
