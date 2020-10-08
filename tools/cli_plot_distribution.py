@@ -87,8 +87,8 @@ def main(args):
     with open(patient_id_file, 'r') as pf:
         patient_ids = [p_id for p_id in pf.read().split("\n") if p_id != ""]
 
-    fig_ct, axs_ct = plt.subplots(2, 1, figsize=(20,10))
-    fig_pet, axs_pet = plt.subplots(2, 1, figsize=(20,10))
+    fig_ct, axs_ct = plt.subplots(2, 1, figsize=(20,20))
+    fig_pet, axs_pet = plt.subplots(2, 1, figsize=(20,20))
 
     # To find the max and min values across all images
     HU_minmax_dict = {}
@@ -149,28 +149,40 @@ def main(args):
 
     axs_ct[0].set_xlabel("HU")
     axs_ct[0].set_ylabel("Number of voxels")
+
+    axs_pet[0].set_xlabel("SUV")
+    axs_pet[0].set_ylabel("Number of voxels")
+
+    # Plot and save min max line plots
+    list_of_mins = [val[0] for val in HU_minmax_dict.values()]
+    list_of_maxs = [val[1] for val in HU_minmax_dict.values()]
+    axs_ct[1].plot(patient_ids, list_of_mins, 'r', label="Minimum HU per patient")
+    axs_ct[1].plot(patient_ids, list_of_maxs, 'b', label="Maximum HU per patient")
+    axs_ct[1].set_ylabel("HU")
+    axs_ct[1].set_xticklabels(patient_ids, rotation=90)
+    axs_ct[1].legend()
+
+    list_of_mins = [val[0] for val in SUV_minmax_dict.values()]
+    list_of_maxs = [val[1] for val in SUV_minmax_dict.values()]
+    axs_pet[1].plot(patient_ids, list_of_mins, 'r', label="Minimum SUV per patient")
+    axs_pet[1].plot(patient_ids, list_of_maxs, 'b', label="Maximum SUV per patient")
+    axs_pet[1].set_ylabel("SUV")
+    axs_pet[1].set_xticklabels(patient_ids, rotation=90)
+    axs_pet[1].legend()
+
+    # Save plots
     if hu_window is None:
         output_filepath = f"{output_dir}/hecktor_{data_info}_CT_hist.png"
     else:
         output_filepath = f"{output_dir}/hecktor_{data_info}_CT_win_hist.png"
+    fig_ct.savefig(output_filepath)
 
-    axs_pet[0].set_xlabel("SUV")
-    axs_pet[0].set_ylabel("Number of voxels")
     if suv_window is None:
         output_filepath = f"{output_dir}/hecktor_{data_info}_PET_hist.png"
     else:
         output_filepath = f"{output_dir}/hecktor_{data_info}_PET_win_hist.png"
-
-    # Plot and save min max line plots
-    axs_ct[1].plot(HU_minmax_dict.keys(), [val[0] for val in HU_minmax_dict.values()], 'r', label="Minimum HU per patient")
-    axs_ct[1].plot(HU_minmax_dict.keys(), [val[1] for val in HU_minmax_dict.values()], 'b', label="Maximum HU per patient")
-
-    axs_pet[1].plot(SUV_minmax_dict.keys(), [val[0] for val in SUV_minmax_dict.values()], 'r', label="Minimum SUV per patient")
-    axs_pet[1].plot(SUV_minmax_dict.keys(), [val[1] for val in SUV_minmax_dict.values()], 'b', label="Maximum SUV per patient")
-
-    # Save plots
-    fig_ct.savefig(output_filepath)
     fig_pet.savefig(output_filepath)
+
     print("done")
 
 
