@@ -48,7 +48,6 @@ class NdimageVisualizer():
 
         if view == 'axial':
             for i, image_np in enumerate(image_np_list):
-                image_np = image_np.transpose((2,1,0)) # Convert to sitk (W,H,D) dim ordering
                 strip_size_horiz = self.phy_size[0]
                 strip_size_vert = (idx_range[1]-idx_range[0]) * self.phy_size[1]
                 strip = np.zeros((strip_size_vert, strip_size_horiz))
@@ -61,7 +60,6 @@ class NdimageVisualizer():
 
         if view == 'coronal':
             for i, image_np in enumerate(image_np_list):
-                image_np = image_np.transpose((2,1,0)) # Convert to sitk (W,H,D) dim ordering
                 strip_size_horiz = self.phy_size[0]
                 strip_size_vert = (idx_range[1]-idx_range[0]) * self.phy_size[2]
                 strip = np.zeros((strip_size_vert, strip_size_horiz))
@@ -77,7 +75,6 @@ class NdimageVisualizer():
 
         if view == 'sagittal':
             for i, image_np in enumerate(image_np_list):
-                image_np = image_np.transpose((2,1,0)) # Convert to sitk (W,H,D) dim ordering
                 strip_size_horiz = self.phy_size[1]
                 strip_size_vert = (idx_range[1]-idx_range[0]) * self.phy_size[2]
                 strip = np.zeros((strip_size_vert, strip_size_horiz))
@@ -108,19 +105,18 @@ class NdimageVisualizer():
 
 def display_image(sitk_image,
                   axial_idxs=[], coronal_idxs=[], sagittal_idxs=[],
-                  window_level = None, window_width = None,
-                  title=None):
-    """
-    TODO: Add feature to display slices along only 1 or 2 axes
-    """
+                  window = None,
+                  title=None,
+                  cmap='gray'):
+
 
     spacing = sitk_image.GetSpacing()
 
 
-    if window_level != None and window_width != None:
+    if window is not None:
         # Apply window and change scan image scale to 0-255
-        window_min = window_level - window_width//2
-        window_max = window_level + window_width//2
+        window_min = window['level'] - window['width']//2
+        window_max = window['level'] + window['width']//2
         sitk_image = sitk.Cast(sitk.IntensityWindowing(sitk_image, windowMinimum=window_min, windowMaximum=window_max,
                                                        outputMinimum=0.0, outputMaximum=255.0), sitk.sitkUInt8)
 
@@ -143,7 +139,7 @@ def display_image(sitk_image,
     n_rows = image2d.shape[0] # #rows of the 2d array - corresponds to sitk image height
     n_cols = image2d.shape[1] # #columns of the 2d array - corresponds to sitk image width
     extent = (0, len(axial_idxs)*n_cols*spacing[0], n_rows*spacing[1], 0)
-    ax1.imshow(axial_slices, extent=extent, interpolation=None, cmap='gray')
+    ax1.imshow(axial_slices, extent=extent, interpolation=None, cmap=cmap)
     ax1.set_title(f"Axial slices: {axial_idxs}")
     ax1.axis('off')
 
@@ -161,7 +157,7 @@ def display_image(sitk_image,
     n_rows = image2d.shape[0] # #rows of the 2d array - corresponds to sitk image depth
     n_cols = image2d.shape[1] # #columns of the 2d array - corresponds to sitk image width
     extent = (0, len(coronal_idxs)*n_cols*spacing[0], n_rows*spacing[2], 0)
-    ax2.imshow(coronal_slices, extent=extent, interpolation=None, cmap='gray')
+    ax2.imshow(coronal_slices, extent=extent, interpolation=None, cmap=cmap)
     ax2.set_title(f"Coronal slices: {coronal_idxs}")
     ax2.axis('off')
 
@@ -180,13 +176,14 @@ def display_image(sitk_image,
     n_rows = image2d.shape[0] # #rows of the 2d array - corresponds to sitk image depth
     n_cols = image2d.shape[1] # #columns of the 2d array - corresponds to sitk image height
     extent = (0, len(sagittal_idxs)*n_cols*spacing[1], n_rows*spacing[2], 0)
-    ax3.imshow(sagittal_slices, extent=extent, interpolation=None, cmap='gray')
+    ax3.imshow(sagittal_slices, extent=extent, interpolation=None, cmap=cmap)
     ax3.set_title(f"Sagittal slices: {sagittal_idxs}")
     ax3.axis('off')
 
     if title:
         fig.suptitle(title, fontsize='x-large')
     plt.show()
+
 
 
 def display_image_np(np_array, spacing, is_label=False,
