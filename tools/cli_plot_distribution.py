@@ -15,7 +15,7 @@ import SimpleITK as sitk
 
 
 # Constants
-DEFAULT_DATA_DIR = "/home/chinmay/Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
+DEFAULT_DATA_DIR = "/home/zk315372/Chinmay/Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
 DEFAULT_PATIENT_ID_FILE = "../hecktor_meta/patient_IDs_train.txt"
 DEFAULT_OUTPUT_DIR = "../hecktor_meta"
 DEFAULT_HAS_SUBDIRS = 0
