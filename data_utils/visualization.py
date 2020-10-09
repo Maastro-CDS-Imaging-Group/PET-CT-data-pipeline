@@ -14,18 +14,25 @@ class NdimageVisualizer():
         self.array_size = (450, 450, 100)
         self.phy_size = [int(self.array_size[i]*self.spacing[i]) for i in range(3)]
 
-        self.pet_window = {'level':3, 'width':5}
-        self.ct_window = {'level':0, 'width':300}
+        self.suv_window = {'level':3, 'width':5}
+        self.hu_window = {'level':0, 'width':300}
 
         self.cmap_dict = {'PET': 'gist_rainbow', 'CT': 'gray', 'label map': 'gray'}
         self.dpi = 80
 
 
+    def set_suv_window(self, window):
+        self.suv_window = window
+
+    def set_hu_window(self, window):
+        self.hu_window = window
+
+
     def _apply_window(self, strip, modality):
         if modality == 'PET':
-            window = self.pet_window = {'level':3, 'width':5}
+            window = self.suv_window = {'level':3, 'width':5}
         if modality == 'CT':
-            window = self.ct_window = {'level':0, 'width':300}
+            window = self.hu_window = {'level':0, 'width':300}
         win_min = window['level'] - window['width'] // 2
         win_max = window['level'] + window['width'] // 2
         strip[strip < win_min] = win_min
