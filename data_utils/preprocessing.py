@@ -4,8 +4,8 @@ from scipy.ndimage import gaussian_filter
 class Preprocessor():
 
 	def __init__(self, spacing_dict={'xy spacing':1, 'slice thickness':3},
-		         smooth_sigma_mm={'PET': 2.0, 'CT': 1.0},
-		         standardization_method='clipping',
+		         smooth_sigma_mm={'PET': 2.0, 'CT': 0.0},
+		         standardization_method={'PET': 'clipping', 'CT': 'clipping'},
 		         clipping_range={'PET': [0,20], 'CT': [-150,150]},
 		         histogram_landmarks_path={'PET': None, 'CT': None}
 		         ):
@@ -30,9 +30,9 @@ class Preprocessor():
 
 
 	def standardize_intensity(self, image_np, modality):
-		if self.standardization_method == 'clipping':
+		if self.standardization_method[modality] == 'clipping':
 			image_np = self._clip(image_np, modality)
-		elif self.standardization_method == 'histogram':
+		elif self.standardization_method[modality] == 'histogram':
 			image_np = self._histogram_transform(image_np, modality)
 		return image_np
 
@@ -47,6 +47,6 @@ class Preprocessor():
 		pass
 
 
-	def scale_to_unit_range(self, image_np):
+	def rescale_to_unit_range(self, image_np):
 		image_np = (image_np - image_np.min()) / (image_np.max() - image_np.min())
 		return image_np

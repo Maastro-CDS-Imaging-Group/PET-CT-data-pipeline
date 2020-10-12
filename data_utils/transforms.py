@@ -1,12 +1,13 @@
 import numpy as np
 import torchio
 
-# Augmentation config
+# TorchIO augmentation config
 ROTATION_RANGE = (-10, 10)
 SCALE_FACTOR_RANGE = (0.85,1.15)
 NUM_CONTROL_POINTS = (5,5,5)
 MAX_DISPLACEMENT = (20,20,20)
 
+# PET intensity stretching
 PET_PC95_INCREASE_FACTOR = 1.2
 
 

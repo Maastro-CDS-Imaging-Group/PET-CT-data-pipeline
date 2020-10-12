@@ -17,7 +17,7 @@ class NdimageVisualizer():
         self.suv_window = {'level':3, 'width':5}
         self.hu_window = {'level':0, 'width':300}
 
-        self.cmap_dict = {'PET': 'gist_rainbow', 'CT': 'gray', 'label map': 'gray'}
+        self.cmap_dict = {'PET': 'gist_rainbow', 'CT': 'gray', 'GTV labelmap': 'gray'}
         self.dpi = 80
 
 
@@ -29,10 +29,13 @@ class NdimageVisualizer():
 
 
     def _apply_window(self, strip, modality):
+        if modality == 'GTV labelmap':
+            return strip
+
         if modality == 'PET':
-            window = self.suv_window = {'level':3, 'width':5}
+            window = self.suv_window
         if modality == 'CT':
-            window = self.hu_window = {'level':0, 'width':300}
+            window = self.hu_window
         win_min = window['level'] - window['width'] // 2
         win_max = window['level'] + window['width'] // 2
         strip[strip < win_min] = win_min
@@ -40,8 +43,20 @@ class NdimageVisualizer():
         return strip
 
 
-    def _custom_imshow(self, ax, image, title, cmap):
-        ax.imshow(image, cmap=cmap)
+    def _custom_imshow(self, ax, image, title, modality):
+        # Apply window
+        if modality == 'GTV labelmap':
+            ax.imshow(image, cmap=self.cmap_dict[modality])
+
+        else:
+            if modality == 'PET':
+                window = self.suv_window
+            elif modality == 'CT':
+                window = self.hu_window
+            win_min = window['level'] - window['width'] // 2
+            win_max = window['level'] + window['width'] // 2
+            ax.imshow(image, cmap=self.cmap_dict[modality], vmin=win_min, vmax=win_max)
+
         ax.set_title(title)
         ax.axis('off')
 
@@ -62,8 +77,7 @@ class NdimageVisualizer():
                     y1, y2 = j*self.phy_size[1], j*self.phy_size[1] + self.phy_size[1]
                     axial_slice = image_np[:, :, s].T
                     strip[y1:y2, :] = axial_slice
-                strip = self._apply_window(strip, modalities[i])
-                self._custom_imshow(axs[i], strip, title=subtitles[i], cmap=self.cmap_dict[modalities[i]])
+                self._custom_imshow(axs[i], strip, title=subtitles[i], modality=modalities[i])
 
         if view == 'coronal':
             for i, image_np in enumerate(image_np_list):
@@ -77,8 +91,7 @@ class NdimageVisualizer():
                     coronal_slice = np.flip(coronal_slice, axis=1)
                     coronal_slice = scipy.ndimage.zoom(coronal_slice, [3,1], order=1)
                     strip[y1:y2, :] = coronal_slice
-                strip = self._apply_window(strip, modalities[i])
-                self._custom_imshow(axs[i], strip, title=subtitles[i], cmap=self.cmap_dict[modalities[i]])
+                self._custom_imshow(axs[i], strip, title=subtitles[i], modality=modalities[i])
 
         if view == 'sagittal':
             for i, image_np in enumerate(image_np_list):
@@ -92,8 +105,7 @@ class NdimageVisualizer():
                     sagittal_slice = scipy.ndimage.rotate(sagittal_slice, 90)
                     sagittal_slice = scipy.ndimage.zoom(sagittal_slice, [3,1], order=1)
                     strip[y1:y2, :] = sagittal_slice
-                strip = self._apply_window(strip, modalities[i])
-                self._custom_imshow(axs[i], strip, title=subtitles[i], cmap=self.cmap_dict[modalities[i]])
+                self._custom_imshow(axs[i], strip, title=subtitles[i], modality=modalities[i])
 
         # Display
         fig.suptitle(title)

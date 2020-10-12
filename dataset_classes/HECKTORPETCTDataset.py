@@ -1,7 +1,7 @@
 """
 # TODO
-	1. Add multichannel representation
-	2. Cross validation support
+	x Add multichannel representation
+	- Cross validation support
 """
 
 import sys, random
@@ -15,6 +15,10 @@ import SimpleITK as sitk
 sys.path.append("../")
 from data_utils.conversion import *
 import data_utils.transforms as transforms
+
+
+# Constants
+AUG_PROBABILITY = 0.5
 
 
 class HECKTORPETCTDataset(torch.utils.data.Dataset):
@@ -61,6 +65,10 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 
 
 
+	def __len__(self):
+		return len(self.patient_ids)
+
+
 	def __getitem__(self, idx):
 		p_id = self.patient_ids[idx]
 
@@ -84,65 +92,78 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 
 		# Data augmentation
 		if self.augment_data:
-			if random.random() > 0.5:
-				PET_np, CT_np, GTV_labelmap_np = augmentation_transform(PET_np, CT_np, GTV_labelmap_np)
+			if random.random() < AUG_PROBABILITY:
+				PET_np, CT_np, GTV_labelmap_np = self.augmentation_transform(PET_np, CT_np, GTV_labelmap_np)
 
-		# Rescale to [0,1] range
-		PET_np = self.preprocessor.scale_to_unit_range(PET_np)
-		CT_np = self.preprocessor.scale_to_unit_range(CT_np)
+		# Rescale intensities to [0,1] range
+		#PET_np = self.preprocessor.rescale_to_unit_range(PET_np)
+		#CT_np = self.preprocessor.rescale_to_unit_range(CT_np)
 
-
-		# Construct the sample dict. Convert to tensor and change dim ordering to (1,D,H,W)
+		# Construct the sample dict -- Convert to tensor and change dim ordering to (D,H,W)
 		if self.input_representation == 'separate volumes':
-			sample_dict = {'PET': torch.from_numpy(PET_np).permute(2,1,0).unsqueeze(dim=0),
-	                       'CT': torch.from_numpy(CT_np).permute(2,1,0).unsqueeze(dim=0),
-	                       'GTV labelmap': torch.from_numpy(GTV_labelmap_np).permute(2,1,0).unsqueeze(dim=0)
+			# Provide PET and CT as 2 separate input tensors, each of shape (1,D,H,W). GTV mask will be of shape (D,H,W)
+			sample_dict = {'PET': np2tensor(PET_np).permute(2,1,0).unsqueeze(dim=0),
+	                       'CT': np2tensor(CT_np).permute(2,1,0).unsqueeze(dim=0),
+	                       'GTV labelmap': np2tensor(GTV_labelmap_np).permute(2,1,0)
 			              }
+
 		elif self.input_representation == 'multichannel volume':
-			# TODO
-			pass
+			# Pack PET and CT into a single input tensor of shape (2,D,H,W). GTV mask will be of shape (D,H,W)
+			PET_tnsr = np2tensor(PET_np).permute(2,1,0)
+			CT_tnsr = np2tensor(CT_np).permute(2,1,0)
+			sample_dict = {'PET-CT': torch.stack([PET_tnsr, CT_tnsr], dim=0),
+	                       'GTV labelmap': torch.from_numpy(GTV_labelmap_np).permute(2,1,0)
+						  }
 
 		return sample_dict
 
 
 	def augmentation_transform(self, PET_np, CT_np, GTV_labelmap_np):
 		r = random.random()
-
-		# TorchIO OneOf transform
-		if r > 0 and r < 0.75:
-			subject = self._get_torchio_subject(PET_np, CT_np, GTV_labelmap_np)
+		if  r < 0.75:
+			# Apply one of the 3 TorchIO spatial transforms
+			subject = self._create_torchio_subject(PET_np, CT_np, GTV_labelmap_np)
 			subject = self.torchio_oneof_transform(subject)
 			PET_np = subject['PET'].numpy().squeeze()
 			CT_np = subject['CT'].numpy().squeeze()
 			GTV_labelmap_np = subject['GTV labelmap'].numpy().squeeze()
-
-		# PET intensity stretching
 		else:
+			# PET intensity stretching
 			PET_np = self.PET_stretch_transform(PET_np)
-
 		return PET_np, CT_np, GTV_labelmap_np
 
-	def _get_torchio_subject(self, PET_np, CT_np, GTV_labelmap_np):
+	def _create_torchio_subject(self, PET_np, CT_np, GTV_labelmap_np):
 		PET_tio = torchio.Image(tensor=np2tensor(PET_np).unsqueeze(dim=0), type=torchio.INTENSITY, affine=self.affine_matrix)
 		CT_tio = torchio.Image(tensor=np2tensor(CT_np).unsqueeze(dim=0), type=torchio.INTENSITY, affine=self.affine_matrix)
-		GTV_labelmap_tio = torchio.Image(tensor=np2tensor(GTV_labelmap_np).unsqueeze(dim=0), type=torchio.LABELMAP, affine=self.affine_matrix)
+		GTV_labelmap_tio = torchio.Image(tensor=np2tensor(GTV_labelmap_np).unsqueeze(dim=0), type=torchio.LABEL, affine=self.affine_matrix)
 		subject_dict = {'PET': PET_tio, 'CT': CT_tio, 'GTV labelmap': GTV_labelmap_tio}
 		subject = torchio.Subject(subject_dict)
 		return subject
+
 
 
 if __name__ == '__main__':
 	data_dir = "/home/chinmay/Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
 	patient_id_filepath = "../hecktor_meta/patient_IDs_train.txt"
 
-	dataset = HECKTORPETCTDataset(data_dir, patient_id_filepath, mode='train', input_representation='separate volumes', augment_data=False)
-	
+	dataset = HECKTORPETCTDataset(data_dir,
+		                          patient_id_filepath,
+		                          mode='train',
+		                          input_representation='separate volumes',
+		                          augment_data=False)
+
 	from data_utils.preprocessing import Preprocessor
 	preprocessor = Preprocessor()
 	dataset.set_preprocessor(preprocessor)
 
-	sample_dict = dataset[0]
-	print(sample_dict['PET'].shape)
-	print(sample_dict['PET'].min())
-	print(sample_dict['PET'].max())
-	
+	print(len(dataset))
+
+	from torch.utils.data import DataLoader
+	import time
+
+	for num_workers in [0,1,2,4]:
+		loader = DataLoader(dataset, batch_size=1, num_workers=num_workers)
+		for _ in range(2):
+			t1 = time.time()
+			sample = next(iter(loader))
+			print(f"Workers:{num_workers} -- {time.time()-t1}s")

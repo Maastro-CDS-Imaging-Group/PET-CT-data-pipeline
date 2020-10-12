@@ -62,13 +62,13 @@ def get_args():
                         type=float,
                         nargs=2,
                         default=DEFAULT_HU_WINDOW,
-                        help="HU window to apply to the CT images before plotting the distribution")
+                        help="HU window to apply to the CT images before plotting the distribution: [win_lo, win_hi]")
 
     parser.add_argument("--suv_window",
                         type=float,
                         nargs=2,
                         default=DEFAULT_SUV_WINDOW,
-                        help="SUV window to apply to the PET images before plotting the distribution")
+                        help="SUV window to apply to the PET images before plotting the distribution: [win_lo, win_hi]")
 
     args = parser.parse_args()
     return args
@@ -107,9 +107,9 @@ def main(args):
         # HU histogram
         CT_np = sitk.GetArrayFromImage(CT_sitk)
 
-        bin_size = 10
+        bin_size = 100
         if hu_window is None:
-            axs_ct[0].hist(CT_np.flatten(), bins=np.arange(-3020, 1700, bin_size), histtype='step')
+            axs_ct[0].hist(CT_np.flatten(), bins=np.arange(-4500, 2000, bin_size), histtype='step')
         else:
             CT_np[CT_np < hu_window[0]] = hu_window[0]
             CT_np[CT_np > hu_window[1]] = hu_window[1]
