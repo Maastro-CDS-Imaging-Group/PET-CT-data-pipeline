@@ -3,21 +3,24 @@ from scipy.ndimage import gaussian_filter
 
 class Preprocessor():
 
-	def __init__(self, spacing_dict={'xy spacing':1, 'slice thickness':3},
-		         smooth_sigma_mm={'PET': 2.0, 'CT': 0.0},
+	def __init__(self,
+				 smooth_sigma_mm={'PET': 2.0, 'CT': 0.0},
 		         standardization_method={'PET': 'clipping', 'CT': 'clipping'},
 		         clipping_range={'PET': [0,20], 'CT': [-150,150]},
 		         histogram_landmarks_path={'PET': None, 'CT': None}
 		         ):
 
 		# Smoothing params
-		self.spacing_dict = spacing_dict
+		self.spacing_dict = None
 		self.smooth_sigma_mm = smooth_sigma_mm
 
 		# Standardization params
 		self.standardization_method = standardization_method
 		self.clipping_range = clipping_range
 		self.histogram_landmarks_path = histogram_landmarks_path
+
+	def set_spacing(self, spacing_dict):
+		self.spacing_dict = spacing_dict
 
 
 	def smoothing_filter(self, image_np, modality):

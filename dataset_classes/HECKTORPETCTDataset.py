@@ -23,7 +23,7 @@ AUG_PROBABILITY = 0.5
 
 class HECKTORPETCTDataset(torch.utils.data.Dataset):
 
-	def __init__(self, data_dir, patient_id_filepath, mode='train', input_representation='separate volumes', augment_data=False):
+	def __init__(self, data_dir, patient_id_filepath, mode='train', preprocessor=None, input_representation='separate volumes', augment_data=False):
 
 		self.data_dir = data_dir
 		with open(patient_id_filepath, 'r') as pf:
@@ -32,10 +32,12 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 		self.mode = mode
 		self.input_representation = input_representation
 
-		self.xy_spacing = 1.0
-		self.slice_thickness = 3.0
+		self.spacing_dict = {'xy spacing': 1.0, 'slice thickness': 3.0}
 
-		self.preprocessor = None
+		self.preprocessor = preprocessor
+		if self.preprocessor is None:
+			raise Exception("Specify the preprocessor")
+		preprocessor.set_spacing(self.spacing_dict)
 
 		# Augmentation config
 		self.augment_data = augment_data
@@ -51,18 +53,6 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 		self.PET_stretch_transform = None
 		if self.augment_data:
 			self.torchio_oneof_transform, self.PET_stretch_transform = transforms.build_transforms()
-
-
-	# Getters
-	def get_spacing(self):
-		spacing_dict = {'xy spacing': self.xy_spacing, 'slice thickness': self.slice_thickness}
-		return spacing_dict
-
-
-	# Setters
-	def set_preprocessor(self, preprocessor):
-		self.preprocessor = preprocessor
-
 
 
 	def __len__(self):
@@ -96,8 +86,8 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 				PET_np, CT_np, GTV_labelmap_np = self.apply_transform(PET_np, CT_np, GTV_labelmap_np)
 
 		# Rescale intensities to [0,1] range
-		PET_np = self.preprocessor.rescale_to_unit_range(PET_np)
-		CT_np = self.preprocessor.rescale_to_unit_range(CT_np)
+		# PET_np = self.preprocessor.rescale_to_unit_range(PET_np)
+		# CT_np = self.preprocessor.rescale_to_unit_range(CT_np)
 
 		# Construct the sample dict -- Convert to tensor and change dim ordering to (D,H,W)
 		if self.input_representation == 'separate volumes':
