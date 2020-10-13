@@ -29,11 +29,16 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 		with open(patient_id_filepath, 'r') as pf:
 			self.patient_ids = [p_id for p_id in pf.read().split('\n') if p_id != '']
 
+		# CHGJ(55), CHMR(18) and CHUS(72) for training. CHUM(56) for validation
 		self.mode = mode
+		if self.mode == 'train':
+			self.patient_ids = [p_id for p_id in self.patient_ids if 'CHUM' not in p_id]
+		elif self.mode == 'validation':
+			self.patient_ids = [p_id for p_id in self.patient_ids if 'CHUM' in p_id]
+
 		self.input_representation = input_representation
 
 		self.spacing_dict = {'xy spacing': 1.0, 'slice thickness': 3.0}
-
 		self.preprocessor = preprocessor
 		if self.preprocessor is None:
 			raise Exception("Specify the preprocessor")
