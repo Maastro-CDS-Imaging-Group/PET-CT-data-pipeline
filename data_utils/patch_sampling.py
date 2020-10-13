@@ -27,12 +27,10 @@ class PatchSampler():
             start_idx = (f_pt + np.ceil(np.array(self.patch_size))).astype(np.int)
             end_idx = (f_pt - np.floor(np.array(self.patch_size)) - 1).astype(np.int)
             for key in subject_dict.keys():
-                patch[key] = subject_dict[key][start_idx[0]:end_idx[0], start_idx[1]:end_idx[1], start_idx[2]:end_idx[2]]
-            
+                patch[key] = subject_dict[key][start_idx[0]:end_idx[0], start_idx[1]:end_idx[1], start_idx[2]:end_idx[2]]        
             patches_list.append(patch)
 
         return patches_list
-        
     
     def _sample_valid_focal_points(self, subject_dict, num_patches):
         # Use the labelmap to determine volume shape
@@ -121,3 +119,27 @@ class PatchQueue(Dataset):
                                      shuffle=self.shuffle_subjects,
                                     )
         return iter(subjects_loader)
+
+
+if __name__ == '__main__':
+
+    import sys
+    sys.path.append("../")
+    from dataset_classes.HECKTORPETCTDataset import HECKTORPETCTDataset
+
+    data_dir = "/home/zk315372/Chinmay/Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
+    patient_id_filepath = "../hecktor_meta/patient_IDs_train.txt"
+    dataset = HECKTORPETCTDataset(data_dir,
+                                    patient_id_filepath,
+                                    mode='train',
+                                    input_representation='separate volumes',
+                                    augment_data=False)
+
+    from data_utils.preprocessing import Preprocessor
+    preprocessor = Preprocessor()
+    dataset.set_preprocessor(preprocessor)
+
+    subject_dict = dataset[0]
+    sampler = PatchSampler(patch_size=(150,150,50))
+    patches_list = sampler.get_patches(subject_dict, num_patches=5)
+    print(len(patches_list))

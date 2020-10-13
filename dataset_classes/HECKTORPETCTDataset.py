@@ -156,8 +156,4 @@ if __name__ == '__main__':
 	preprocessor = Preprocessor()
 	dataset.set_preprocessor(preprocessor)
 
-	from data_utils.patch_sampling import PatchSampler
-	sampler = PatchSampler(patch_size=(150,150,50))
-	subject_dict = dataset[0]
-
-	patches_list = sampler.get_patches(subject_dict, num_patches=5)
+	sample = dataset[0]
