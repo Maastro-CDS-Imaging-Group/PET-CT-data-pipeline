@@ -93,11 +93,11 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 		# Data augmentation
 		if self.augment_data:
 			if random.random() < AUG_PROBABILITY:
-				PET_np, CT_np, GTV_labelmap_np = self.augmentation_transform(PET_np, CT_np, GTV_labelmap_np)
+				PET_np, CT_np, GTV_labelmap_np = self.apply_transform(PET_np, CT_np, GTV_labelmap_np)
 
 		# Rescale intensities to [0,1] range
-		#PET_np = self.preprocessor.rescale_to_unit_range(PET_np)
-		#CT_np = self.preprocessor.rescale_to_unit_range(CT_np)
+		PET_np = self.preprocessor.rescale_to_unit_range(PET_np)
+		CT_np = self.preprocessor.rescale_to_unit_range(CT_np)
 
 		# Construct the sample dict -- Convert to tensor and change dim ordering to (D,H,W)
 		if self.input_representation == 'separate volumes':
@@ -118,7 +118,7 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 		return sample_dict
 
 
-	def augmentation_transform(self, PET_np, CT_np, GTV_labelmap_np):
+	def apply_transform(self, PET_np, CT_np, GTV_labelmap_np):
 		r = random.random()
 		if  r < 0.75:
 			# Apply one of the 3 TorchIO spatial transforms
@@ -143,7 +143,7 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 
 
 if __name__ == '__main__':
-	data_dir = "/home/chinmay/Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
+	data_dir = "/home/zk315372/Chinmay/Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
 	patient_id_filepath = "../hecktor_meta/patient_IDs_train.txt"
 
 	dataset = HECKTORPETCTDataset(data_dir,
@@ -156,14 +156,8 @@ if __name__ == '__main__':
 	preprocessor = Preprocessor()
 	dataset.set_preprocessor(preprocessor)
 
-	print(len(dataset))
+	from data_utils.patch_sampling import PatchSampler
+	sampler = PatchSampler(patch_size=(150,150,50))
+	subject_dict = dataset[0]
 
-	from torch.utils.data import DataLoader
-	import time
-
-	for num_workers in [0,1,2,4]:
-		loader = DataLoader(dataset, batch_size=1, num_workers=num_workers)
-		for _ in range(2):
-			t1 = time.time()
-			sample = next(iter(loader))
-			print(f"Workers:{num_workers} -- {time.time()-t1}s")
+	patches_list = sampler.get_patches(subject_dict, num_patches=5)
