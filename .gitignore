@@ -1,8 +1,8 @@
 # Checkpoints
-notebooks/.ipynb_checkpoints/*
+notebooks/.ipynb_checkpoints
 
 # Pycache
-data_utils/__pycache__/*
-dataset_classes/__pycache__/*
-tools/__pycache__/*
-notebooks/__pycache__/*
+data_utils/__pycache__
+dataset_classes/__pycache__
+tools/__pycache__
+notebooks/__pycache__
