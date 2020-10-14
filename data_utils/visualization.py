@@ -93,7 +93,7 @@ class NdimageVisualizer():
                 self._custom_imshow(axs[i], strip, title=subtitles[i], modality=modalities[i])
 
         # Display
-        fig.suptitle(title)
+        fig.suptitle(title, fontsize='x-large')
         plt.show()
 
 

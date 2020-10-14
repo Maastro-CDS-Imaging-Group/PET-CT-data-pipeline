@@ -17,7 +17,7 @@ AUG_PROBABILITY = 0.5
 
 class HECKTORPETCTDataset(torch.utils.data.Dataset):
 	"""
-	Dataset class to interface with the HECKTOR PET CT data.
+	Dataset class to interface with the HECKTOR PET-CT data.
 	The GTV masks for only the HECKTOR train set (4 centres from Quebec) are available.
 	Centres and patient distribution:
 		- CHGJ -- 55
@@ -25,7 +25,7 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 		- CHUM -- 72
 		- CHUS -- 56
 	"""
-	def __init__(self, data_dir, patient_id_filepath, mode='cval-CHUM-training', preprocessor=None, input_representation='separate-volumes', augment_data=False):
+	def __init__(self, data_dir, patient_id_filepath, mode='training', preprocessor=None, input_representation='separate-volumes', augment_data=False):
 		"""
 		Args:
 		- data_dir
@@ -133,12 +133,12 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 	def apply_transform(self, PET_np, CT_np, GTV_labelmap_np):
 		r = random.random()
 		if  r < 0.75:
-			# Apply one of the 3 TorchIO spatial transforms
-			subject = self._create_torchio_subject(PET_np, CT_np, GTV_labelmap_np)
-			subject = self.torchio_oneof_transform(subject)
-			PET_np = subject['PET'].numpy().squeeze()
-			CT_np = subject['CT'].numpy().squeeze()
-			GTV_labelmap_np = subject['GTV labelmap'].numpy().squeeze()
+			# Apply one of the 3 TorchIO spatial transforms. Need to pack the volumes into a TorchIO Subject for this.
+			subject_tio = self._create_torchio_subject(PET_np, CT_np, GTV_labelmap_np)
+			subject_tio = self.torchio_oneof_transform(subject_tio)
+			PET_np = subject_tio['PET'].numpy().squeeze()
+			CT_np = subject_tio['CT'].numpy().squeeze()
+			GTV_labelmap_np = subject_tio['GTV labelmap'].numpy().squeeze()
 		else:
 			# PET intensity stretching
 			PET_np = self.PET_stretch_transform(PET_np)
@@ -149,8 +149,8 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 		CT_tio = torchio.Image(tensor=np2tensor(CT_np).unsqueeze(dim=0), type=torchio.INTENSITY, affine=self.affine_matrix)
 		GTV_labelmap_tio = torchio.Image(tensor=np2tensor(GTV_labelmap_np).unsqueeze(dim=0), type=torchio.LABEL, affine=self.affine_matrix)
 		subject_dict = {'PET': PET_tio, 'CT': CT_tio, 'GTV labelmap': GTV_labelmap_tio}
-		subject = torchio.Subject(subject_dict)
-		return subject
+		subject_tio = torchio.Subject(subject_dict)
+		return subject_tio
 
 
 
