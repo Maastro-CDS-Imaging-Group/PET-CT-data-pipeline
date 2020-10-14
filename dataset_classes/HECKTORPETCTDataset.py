@@ -1,9 +1,3 @@
-"""
-# TODO
-	x Add multichannel representation
-	- Cross validation support
-"""
-
 import sys, random
 
 import numpy as np
@@ -22,19 +16,42 @@ AUG_PROBABILITY = 0.5
 
 
 class HECKTORPETCTDataset(torch.utils.data.Dataset):
-
-	def __init__(self, data_dir, patient_id_filepath, mode='train', preprocessor=None, input_representation='separate volumes', augment_data=False):
-
+	"""
+	Dataset class to interface with the HECKTOR PET CT data.
+	The GTV masks for only the HECKTOR train set (4 centres from Quebec) are available.
+	Centres and patient distribution:
+		- CHGJ -- 55
+		- CHMR -- 18
+		- CHUM -- 72
+		- CHUS -- 56
+	"""
+	def __init__(self, data_dir, patient_id_filepath, mode='cval-CHUM-training', preprocessor=None, input_representation='separate-volumes', augment_data=False):
+		"""
+		Args:
+		- data_dir
+		- patient_id_filepath
+		- mode -- For default split: 'training', 'validation' -- (Takes CHUM for validation)
+				  For cross validation: 'cval-CHGJ-training', 'cval-CHGJ-validation', ...
+		- input_representation -- 'separate-volumes', 'multichannel-volume'
+		- augment_data
+		"""
 		self.data_dir = data_dir
 		with open(patient_id_filepath, 'r') as pf:
 			self.patient_ids = [p_id for p_id in pf.read().split('\n') if p_id != '']
 
-		# CHGJ(55), CHMR(18) and CHUS(72) for training. CHUM(56) for validation
 		self.mode = mode
-		if self.mode == 'train':
+		# Default split -- CHGJ, CHMR and CHUS for training. CHUM for validation
+		if self.mode == 'training':
 			self.patient_ids = [p_id for p_id in self.patient_ids if 'CHUM' not in p_id]
 		elif self.mode == 'validation':
 			self.patient_ids = [p_id for p_id in self.patient_ids if 'CHUM' in p_id]
+		# Cross validation option
+		if 'cval' in self.mode:
+			val_centre = self.mode.split('-')[1]
+			if 'training' in self.mode:
+				self.patient_ids = [p_id for p_id in self.patient_ids if val_centre not in p_id]
+			elif 'validation' in self.mode:
+				self.patient_ids = [p_id for p_id in self.patient_ids if val_centre in p_id]
 
 		self.input_representation = input_representation
 
@@ -95,14 +112,14 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 		# CT_np = self.preprocessor.rescale_to_unit_range(CT_np)
 
 		# Construct the sample dict -- Convert to tensor and change dim ordering to (D,H,W)
-		if self.input_representation == 'separate volumes':
+		if self.input_representation == 'separate-volumes':
 			# Provide PET and CT as 2 separate input tensors, each of shape (1,D,H,W). GTV mask will be of shape (D,H,W)
 			sample_dict = {'PET': np2tensor(PET_np).permute(2,1,0).unsqueeze(dim=0),
 	                       'CT': np2tensor(CT_np).permute(2,1,0).unsqueeze(dim=0),
 	                       'GTV labelmap': np2tensor(GTV_labelmap_np).permute(2,1,0)
 			              }
 
-		elif self.input_representation == 'multichannel volume':
+		elif self.input_representation == 'multichannel-volume':
 			# Pack PET and CT into a single input tensor of shape (2,D,H,W). GTV mask will be of shape (D,H,W)
 			PET_tnsr = np2tensor(PET_np).permute(2,1,0)
 			CT_tnsr = np2tensor(CT_np).permute(2,1,0)

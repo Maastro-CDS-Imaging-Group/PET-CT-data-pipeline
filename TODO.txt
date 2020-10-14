@@ -1,3 +1,1 @@
-- Add cross-validation support 
-
-- Include histogram standardization 
+- Implement and test custom histogram standardization. Adapt the TorchIO source code for this.
