@@ -27,24 +27,26 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 	"""
 	def __init__(self, data_dir, patient_id_filepath, mode='training', preprocessor=None, input_representation='separate-volumes', augment_data=False):
 		"""
-		Args:
-		- data_dir
-		- patient_id_filepath
-		- mode -- For default split: 'training', 'validation' -- (Takes CHUM for validation)
-				  For cross validation: 'cval-CHGJ-training', 'cval-CHGJ-validation', ...
-		- input_representation -- 'separate-volumes', 'multichannel-volume'
-		- augment_data
+		Parameters:
+			data_dir
+			patient_id_filepath
+			mode -- For default split: 'training', 'validation' -- (Takes CHUM for validation)
+					  For cross validation: 'cval-CHGJ-training', 'cval-CHGJ-validation', ...
+			input_representation -- 'separate-volumes' or 'multichannel-volume'
+			augment_data -- True or False
 		"""
 		self.data_dir = data_dir
 		with open(patient_id_filepath, 'r') as pf:
 			self.patient_ids = [p_id for p_id in pf.read().split('\n') if p_id != '']
 
 		self.mode = mode
-		# Default split -- CHGJ, CHMR and CHUS for training. CHUM for validation
+
+		# Default train-val split -- CHGJ, CHMR and CHUS for training. CHUM for validation
 		if self.mode == 'training':
 			self.patient_ids = [p_id for p_id in self.patient_ids if 'CHUM' not in p_id]
 		elif self.mode == 'validation':
 			self.patient_ids = [p_id for p_id in self.patient_ids if 'CHUM' in p_id]
+
 		# Cross validation option
 		if 'cval' in self.mode:
 			val_centre = self.mode.split('-')[1]
@@ -116,7 +118,7 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 			# Provide PET and CT as 2 separate input tensors, each of shape (1,D,H,W). GTV mask will be of shape (D,H,W)
 			sample_dict = {'PET': np2tensor(PET_np).permute(2,1,0).unsqueeze(dim=0),
 	                       'CT': np2tensor(CT_np).permute(2,1,0).unsqueeze(dim=0),
-	                       'GTV labelmap': np2tensor(GTV_labelmap_np).permute(2,1,0)
+	                       'GTV-labelmap': np2tensor(GTV_labelmap_np).permute(2,1,0)
 			              }
 
 		elif self.input_representation == 'multichannel-volume':
@@ -124,7 +126,7 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 			PET_tnsr = np2tensor(PET_np).permute(2,1,0)
 			CT_tnsr = np2tensor(CT_np).permute(2,1,0)
 			sample_dict = {'PET-CT': torch.stack([PET_tnsr, CT_tnsr], dim=0),
-	                       'GTV labelmap': torch.from_numpy(GTV_labelmap_np).permute(2,1,0)
+	                       'GTV-labelmap': torch.from_numpy(GTV_labelmap_np).permute(2,1,0)
 						  }
 
 		return sample_dict
@@ -138,7 +140,7 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 			subject_tio = self.torchio_oneof_transform(subject_tio)
 			PET_np = subject_tio['PET'].numpy().squeeze()
 			CT_np = subject_tio['CT'].numpy().squeeze()
-			GTV_labelmap_np = subject_tio['GTV labelmap'].numpy().squeeze()
+			GTV_labelmap_np = subject_tio['GTV-labelmap'].numpy().squeeze()
 		else:
 			# PET intensity stretching
 			PET_np = self.PET_stretch_transform(PET_np)
@@ -148,24 +150,25 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 		PET_tio = torchio.Image(tensor=np2tensor(PET_np).unsqueeze(dim=0), type=torchio.INTENSITY, affine=self.affine_matrix)
 		CT_tio = torchio.Image(tensor=np2tensor(CT_np).unsqueeze(dim=0), type=torchio.INTENSITY, affine=self.affine_matrix)
 		GTV_labelmap_tio = torchio.Image(tensor=np2tensor(GTV_labelmap_np).unsqueeze(dim=0), type=torchio.LABEL, affine=self.affine_matrix)
-		subject_dict = {'PET': PET_tio, 'CT': CT_tio, 'GTV labelmap': GTV_labelmap_tio}
+		subject_dict = {'PET': PET_tio, 'CT': CT_tio, 'GTV-labelmap': GTV_labelmap_tio}
 		subject_tio = torchio.Subject(subject_dict)
 		return subject_tio
 
 
 
 if __name__ == '__main__':
+
+	from data_utils.preprocessing import Preprocessor
+
 	data_dir = "/home/zk315372/Chinmay/Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
 	patient_id_filepath = "../hecktor_meta/patient_IDs_train.txt"
+	preprocessor = Preprocessor()
 
 	dataset = HECKTORPETCTDataset(data_dir,
 		                          patient_id_filepath,
-		                          mode='train',
-		                          input_representation='separate volumes',
+		                          mode='training',
+		                          preprocessor=preprocessor,
+		                          input_representation='separate-volumes',
 		                          augment_data=False)
-
-	from data_utils.preprocessing import Preprocessor
-	preprocessor = Preprocessor()
-	dataset.set_preprocessor(preprocessor)
 
 	sample = dataset[0]

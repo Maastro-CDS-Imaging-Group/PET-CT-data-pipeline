@@ -10,12 +10,16 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class PatchSampler():
+    """
+    Samples 3D patches of specified size using the specified sampling method.
+    """
     def __init__(self, patch_size, sampling='random'):
         self.patch_size = list(patch_size) # Specified in (W,H,D) order
-        self.patch_size.reverse()    # COnvert to (D,H,W) order
+        self.patch_size.reverse()    # Convert to (D,H,W) order
         self.sampling = sampling # TODO - This is unused for now. incorporate it in _sample_valid_focal_points() function
 
-    def get_patches(self, subject_dict, num_patches):
+
+    def get_samples(self, subject_dict, num_patches):
         # Sample valid focal points
         focal_points = self._sample_valid_focal_points(subject_dict, num_patches)
 
@@ -28,18 +32,19 @@ class PatchSampler():
             end_idx = (f_pt + np.array(self.patch_size)//2).astype(np.int)
 
             for key in subject_dict.keys():
-                if key == 'PET' or key == 'CT': # The shape is actally (C,D,H,W) for PET and CT.
+                if key == 'PET' or key == 'CT': # The shape is (C,D,H,W) for PET and CT.
                     patch[key] = subject_dict[key][:, start_idx[0]:end_idx[0], start_idx[1]:end_idx[1], start_idx[2]:end_idx[2]]
-                else:
+                else:  # Labelmap has shape (D,H,W)
                     patch[key] = subject_dict[key][start_idx[0]:end_idx[0], start_idx[1]:end_idx[1], start_idx[2]:end_idx[2]]
 
             patches_list.append(patch)
 
         return patches_list
 
+
     def _sample_valid_focal_points(self, subject_dict, num_patches):
         # Use the labelmap to determine volume shape
-        volume_shape = subject_dict['GTV labelmap'].shape # (D,H,W)
+        volume_shape = subject_dict['GTV-labelmap'].shape # (D,H,W)
         patch_size = np.array(self.patch_size).astype(np.float)
         valid_indx_range = [
                             np.zeros(3) + np.ceil(patch_size/2),
@@ -50,6 +55,57 @@ class PatchSampler():
         xs = np.random.randint(valid_indx_range[0][2], valid_indx_range[1][2], num_patches)
         focal_points = [(zs[i], ys[i], xs[i]) for i in range(num_patches)]
         return focal_points
+
+
+class SliceSampler():
+    """
+    Samples 2D axial slice patches of specified x-y size using the specified sampling method.
+    """
+    def __init__(self, patch_size, sampling='random'):
+        self.patch_size = list(patch_size) # Specified in (W,H) order
+        self.patch_size.reverse()    # Convert to (H,W) order
+        self.sampling = sampling # TODO - This is unused for now. incorporate it in _sample_valid_focal_points() function
+
+
+    def get_samples(self, subject_dict, num_patches):
+        # Sample valid focal points
+        focal_points = self._sample_valid_focal_points(subject_dict, num_patches)
+
+        # Get patches from the subject volumes
+        slice_patches_list = []  # List of dicts
+        for f_pt in focal_points:
+            slice_patch = {}
+            f_pt = np.array(f_pt)
+            z = f_pt[0]
+            xy_start_idx = (f_pt[1:] - np.array(self.patch_size)//2).astype(np.int)
+            xy_end_idx = (f_pt[1:] + np.array(self.patch_size)//2).astype(np.int)
+
+            for key in subject_dict.keys():
+                if key == 'PET' or key == 'CT': # The shape is (C,D,H,W) for PET and CT.
+                    slice_patch[key] = subject_dict[key][:, z, xy_start_idx[0]:xy_end_idx[0], xy_start_idx[1]:xy_end_idx[1]]
+                else:  # Labelmap has shape (D,H,W)
+                    slice_patch[key] = subject_dict[key][z, xy_start_idx[0]:xy_end_idx[0], xy_start_idx[1]:xy_end_idx[1]]
+
+            slice_patches_list.append(slice_patch)
+
+        return slice_patches_list
+
+
+    def _sample_valid_focal_points(self, subject_dict, num_patches):
+        # Use the labelmap to determine volume shape
+        volume_shape = subject_dict['GTV-labelmap'].shape # (D,H,W)
+        patch_size = np.array(self.patch_size).astype(np.float)
+        valid_indx_range = [
+                            np.zeros(2) + np.ceil(patch_size/2),
+                            np.array(volume_shape[1:]) - np.floor(patch_size/2 - 1)
+                            ]
+        zs = np.random.randint(0, volume_shape[0]-1, num_patches)
+        ys = np.random.randint(valid_indx_range[0][1], valid_indx_range[1][1], num_patches)
+        xs = np.random.randint(valid_indx_range[0][2], valid_indx_range[1][2], num_patches)
+        focal_points = [(zs[i], ys[i], xs[i]) for i in range(num_patches)]
+        return focal_points
+
+
 
 
 class PatchQueue(Dataset):
@@ -94,7 +150,7 @@ class PatchQueue(Dataset):
         # Read the subjects, sample patches from the volumes and populate the queue
         for _ in range(num_subjects_for_queue):
             subject_sample = self._get_next_subject_sample()
-            patches = self.sampler.get_patches(subject_sample, self.samples_per_volume)
+            patches = self.sampler.get_samples(subject_sample, self.samples_per_volume)
             self.patches_list.extend(patches)
 
         # Shuffle the queue
@@ -133,9 +189,9 @@ if __name__ == '__main__':
     preprocessor = Preprocessor()
     PET_CT_dataset = HECKTORPETCTDataset(data_dir,
                                     patient_id_filepath,
-                                    mode='train',
+                                    mode='training',
                                     preprocessor=preprocessor,
-                                    input_representation='separate volumes',
+                                    input_representation='separate-volumes',
                                     augment_data=False)
 
     patch_sampler = PatchSampler(patch_size=(150,150,50))

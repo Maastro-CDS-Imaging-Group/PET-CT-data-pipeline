@@ -15,7 +15,7 @@ class NdimageVisualizer():
         self.suv_window = {'level':3, 'width':5}
         self.hu_window = {'level':0, 'width':300}
 
-        self.cmap_dict = {'PET': 'gist_rainbow', 'CT': 'gray', 'GTV labelmap': 'gray'}
+        self.cmap_dict = {'PET': 'gist_rainbow', 'CT': 'gray', 'GTV-labelmap': 'gray'}
         self.dpi = 80
 
 
@@ -27,7 +27,7 @@ class NdimageVisualizer():
 
     def _custom_imshow(self, ax, image, title, modality):
         # Apply window
-        if modality == 'GTV labelmap':
+        if modality == 'GTV-labelmap':
             ax.imshow(image, cmap=self.cmap_dict[modality])
 
         else:
@@ -55,41 +55,38 @@ class NdimageVisualizer():
 
         if view == 'axial':
             for i, image_np in enumerate(image_np_list):
-                strip_size_horiz = phy_size[0]
-                strip_size_vert = (idx_range[1]-idx_range[0]) * phy_size[1]
-                strip = np.zeros((strip_size_vert, strip_size_horiz))
+                slice_list = []
                 for j, s in enumerate(range(*idx_range)):
                     y1, y2 = j*phy_size[1], j*phy_size[1] + phy_size[1]
                     axial_slice = image_np[:, :, s].T
-                    strip[y1:y2, :] = axial_slice
+                    slice_list.append(axial_slice)
+                    strip = np.concatenate(slice_list, axis=0)
                 self._custom_imshow(axs[i], strip, title=subtitles[i], modality=modalities[i])
 
         if view == 'coronal':
             for i, image_np in enumerate(image_np_list):
-                strip_size_horiz = phy_size[0]
-                strip_size_vert = (idx_range[1]-idx_range[0]) * phy_size[2]
-                strip = np.zeros((strip_size_vert, strip_size_horiz))
+                slice_list = []
                 for j, s in enumerate(range(*idx_range)):
                     y1, y2 = j*phy_size[2], j*phy_size[2] + phy_size[2]
                     coronal_slice = image_np[:, s, :]
                     coronal_slice = scipy.ndimage.rotate(coronal_slice, 90)
                     coronal_slice = np.flip(coronal_slice, axis=1)
                     coronal_slice = scipy.ndimage.zoom(coronal_slice, [3,1], order=1)
-                    strip[y1:y2, :] = coronal_slice
+                    slice_list.append(coronal_slice)
+                    strip = np.concatenate(slice_list, axis=0)
                 self._custom_imshow(axs[i], strip, title=subtitles[i], modality=modalities[i])
 
         if view == 'sagittal':
             for i, image_np in enumerate(image_np_list):
-                strip_size_horiz = phy_size[1]
-                strip_size_vert = (idx_range[1]-idx_range[0]) * phy_size[2]
-                strip = np.zeros((strip_size_vert, strip_size_horiz))
+                slice_list = []
                 for j, s in enumerate(range(*idx_range)):
                     x1, x2 = i*phy_size[1], i*phy_size[1] + phy_size[1]
                     y1, y2 = j*phy_size[2], j*phy_size[2] + phy_size[2]
                     sagittal_slice = image_np[s, :, :]
                     sagittal_slice = scipy.ndimage.rotate(sagittal_slice, 90)
                     sagittal_slice = scipy.ndimage.zoom(sagittal_slice, [3,1], order=1)
-                    strip[y1:y2, :] = sagittal_slice
+                    slice_list.append(sagittal_slice)
+                    strip = np.concatenate(slice_list, axis=0)
                 self._custom_imshow(axs[i], strip, title=subtitles[i], modality=modalities[i])
 
         # Display

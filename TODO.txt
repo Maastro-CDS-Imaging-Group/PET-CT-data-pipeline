@@ -1,1 +1,4 @@
+
 - Implement and test custom histogram standardization. Adapt the TorchIO source code for this.
+
+- Option for setting type of sampling in Patch Sampler -- uniform sampling (already exists), sampling volumes that contain the GTV, etc.

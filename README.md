@@ -1,5 +1,8 @@
 # Notebooks, scripts and utilities for PET-CT data processing
 
+For segmentation of Head-and-Neck gross tumour volume using deep-learning based PET and CT information fusion.
+
+
 ## Repository structure
 TODO
 
@@ -39,7 +42,7 @@ Processing involved:
 2. Intensity standardization  
 	- 2 options: Intensity clipping or histogram standardization
 	- Clipping for CT is set to [-150,150] HU and for PET [0,20] SUV by default.
-	- Histogram standardization [[Paper](https://ieeexplore.ieee.org/document/836373) [TorchIO transform](https://torchio.readthedocs.io/transforms/preprocessing.html#histogramstandardization)]: Computing a mean histogram using the training samples, and distorting the histograms of the images to match this mean histogram using piece-wise linear contrast adjustment. To be done separately for PET and CT, obviously. 
+	- Histogram standardization [[Paper](https://ieeexplore.ieee.org/document/836373) | [TorchIO implementation](https://torchio.readthedocs.io/transforms/preprocessing.html#histogramstandardization)]: Computing a mean histogram using the training samples, and distorting the histograms of the images to match this mean histogram using piece-wise linear contrast adjustment. To be done separately for PET and CT, obviously. 
 
 3. Augmentation transform 
 	- Spatial: Random rotation(+-10 degrees), scaling(+-15%), elastic distortion.
