@@ -1,4 +1,9 @@
 
-- Implement and test custom histogram standardization. Adapt the TorchIO source code for this.
-
 - Option for setting type of sampling in Patch Sampler -- uniform sampling (already exists), sampling volumes that contain the GTV, etc.
+
+- Correction:
+	- Fix histogram stdn. To debug, visualize the piecewise linear function for all images.
+
+- Testing:
+	- Unimodality dataset
+	- SliceSampler
