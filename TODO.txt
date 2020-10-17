@@ -1,9 +1,7 @@
 
 - Option for setting type of sampling in Patch Sampler -- uniform sampling (already exists), sampling volumes that contain the GTV, etc.
 
-- Correction:
-	- Fix histogram stdn. To debug, visualize the piecewise linear function for all images.
-
 - Testing:
 	- Unimodality dataset
 	- SliceSampler
+	- Histogram stdn transform

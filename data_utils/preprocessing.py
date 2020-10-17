@@ -2,10 +2,9 @@ from scipy.ndimage import gaussian_filter
 
 
 # Histogram related constants
-# Standard range for PET is set to [0, 20] SUV and for CT is set to [-1000,3000]
-DEFAULT_QUANTILES_CUTOFF_SUV = (0.01, 0.99)
-DEFAULT_QUANTILES_CUTOFF_HU = (0.01, 0.999)
-
+# Standard range for PET is set to [0, 20] SUV and for CT is set to [-250,150] -- same as their clipping ranges
+DEFAULT_QUANTILES_CUTOFF_SUV = (0,1)
+DEFAULT_QUANTILES_CUTOFF_HU = (0,1)
 
 
 class Preprocessor():
@@ -26,9 +25,9 @@ class Preprocessor():
         self.clipping_range = clipping_range
         self.histogram_landmarks_path = histogram_landmarks_path
         self.landmarks_dict = {'PET': None, 'CT': None}
-        self.quantiles_cutoff = {'PET': DEFAULT_QUANTILES_CUTOFF_SUV, 'CT':DEFAULT_QUANTILES_CUTOFF_HU}
+        self.quantiles_cutoff = {'PET': DEFAULT_QUANTILES_CUTOFF_SUV, 'CT': DEFAULT_QUANTILES_CUTOFF_HU}
         for key in ['PET', 'CT']:
-            if standardization_method[key] == 'histogram':
+            if standardization_method[key] == 'clipping+histogram':
                 self.landmarks_dict[key] = np.load(histogram_landmarks_path[key])
 
 
@@ -48,14 +47,15 @@ class Preprocessor():
     def standardize_intensity(self, image_np, modality):
         if self.standardization_method[modality] == 'clipping':
             image_np = self._clip(image_np, modality)
-        elif self.standardization_method[modality] == 'histogram':
+        elif self.standardization_method[modality] == 'clipping+histogram':
+            # Clip the image first to keep intensities in the required range, then apply histogram transform
+            image_np = self._clip(image_np, modality)
             image_np = self._histogram_transform(image_np, modality)
         return image_np
 
     def _clip(self, image_np, modality):
         clipping_range = self.clipping_range[modality]
-        image_np[image_np < clipping_range[0]] = clipping_range[0]
-        image_np[image_np > clipping_range[1]] = clipping_range[1]
+        image_np = np.clip(image_np, clipping_range[0], clipping_range[1])
         return image_np
 
     def _histogram_transform(self, image_np, modality, epsilon=1e-5):
@@ -112,20 +112,4 @@ class Preprocessor():
 
 if __name__ == '__main__':
 
-    from conversion import *
-
-    data_dir = "/home/chinmay/Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
-    CT_sitk = sitk.ReadImage(f"{data_dir}/CHGJ007_ct.nii.gz")
-    CT_np = sitk2np(CT_sitk)
-    print(CT_np.dtype)
-
-    CT_lm_path = "../hecktor_meta/hist_landmarks_CT.npy"
-    preprocessor = Preprocessor(standardization_method={'PET': 'clipping', 'CT': 'histogram'},
-                                histogram_landmarks_path={'CT': CT_lm_path})
-
-    CT_std_np = preprocessor._histogram_transform(CT_np, modality='CT')
-
-    diff = CT_std_np - CT_np
-    print(diff.min(), diff.max())
-    print(CT_np.mean())
-    print(CT_std_np.mean())
+    pass

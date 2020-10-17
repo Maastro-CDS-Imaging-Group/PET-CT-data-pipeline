@@ -11,10 +11,13 @@ DEFAULT_MODALITY = "PET"
 
 
 # Histogram related constants
-DEFAULT_QUANTILES_CUTOFF_SUV = (0.01, 0.99)
+DEFAULT_QUANTILES_CUTOFF_SUV = (0, 1)
 STANDARD_RANGE_SUV = (0, 20)
-DEFAULT_QUANTILES_CUTOFF_HU = (0.01, 0.999)
-STANDARD_RANGE_HU = (-1000, 3000)
+DEFAULT_QUANTILES_CUTOFF_HU = (0, 1)
+STANDARD_RANGE_HU = (-150, 150)
+
+CLIP_RANGE_SUV = [0,20]
+CLIP_RANGE_HU = [-150, 150]
 
 
 class StandardHistogramTrainer():
@@ -22,9 +25,11 @@ class StandardHistogramTrainer():
         self.modality = modality
 
         if self.modality == 'PET':
+            self.clip_range = CLIP_RANGE_SUV
             self.quantiles_cutoff = DEFAULT_QUANTILES_CUTOFF_SUV
             self.standard_scale = STANDARD_RANGE_SUV
         elif self.modality == 'CT':
+            self.clip_range = CLIP_RANGE_HU
             self.quantiles_cutoff = DEFAULT_QUANTILES_CUTOFF_HU
             self.standard_scale = STANDARD_RANGE_HU
 
@@ -39,9 +44,10 @@ class StandardHistogramTrainer():
             image_sitk = sitk.ReadImage(image_file_path)
             image_np = sitk.GetArrayFromImage(image_sitk)
 
-            if self.modality == 'CT': # If CT is given, set all out-of-bound region values equal to air HU (-1000)
-                image_np = np.clip(image_np, -1000, image_np.max())
+            # Clip the image first to keep intensities in the required range
+            image_np = np.clip(image_np, self.clip_range[0], self.clip_range[1])
 
+            # Get percentile values and store them
             percentile_values = np.percentile(image_np, percentiles)
             percentiles_database.append(percentile_values)
 
@@ -107,13 +113,13 @@ def main(args):
         patient_PET_paths = [f"{args.data_dir}/{p_id}_pt.nii.gz" for p_id in patient_ids]
         histogram_trainer = StandardHistogramTrainer(modality='PET', images_paths=patient_PET_paths)
         PET_landmarks = histogram_trainer.train()
-        np.save(f"{args.output_dir}/hist_landmarks_PET.npy", PET_landmarks)
+        np.savetxt(f"{args.output_dir}/hist_landmarks_PET.txt", PET_landmarks)
 
     elif args.modality == 'CT':
         patient_CT_paths = [f"{args.data_dir}/{p_id}_ct.nii.gz" for p_id in patient_ids]
         histogram_trainer = StandardHistogramTrainer(modality='CT', images_paths=patient_CT_paths)
         CT_landmarks = histogram_trainer.train()
-        np.save(f"{args.output_dir}/hist_landmarks_CT.npy", CT_landmarks)
+        np.savetxt(f"{args.output_dir}/hist_landmarks_CT.txt", CT_landmarks)
 
 
 if __name__ == '__main__':
