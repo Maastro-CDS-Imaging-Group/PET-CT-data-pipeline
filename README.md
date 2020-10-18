@@ -32,7 +32,8 @@ TODO
 Codename used for the outputs (and related items) of this step is "crFH_rs113" (cropped keeping Full Head, resampled to 1x1x3). The images thus obtained have a physical volume of (450 x 450 x 300) mm3 and an array size of (450 x 450 x 100) voxels.
 
 ### Patient Dataset
-Derived from torch.utils.data.Dataset, used to return a sample patient dictionary containing full volumes, given an index.
+Defines a dataset which fetches and returns paired input-ouput full volumes of a given patient (index). Performs modality-specific preprocessing and transforms.
+Subclass of torch.utils.data.Dataset.
 
 Processing involved:
 
@@ -42,7 +43,7 @@ Processing involved:
 2. Intensity standardization  
 	- 2 options: Intensity clipping or histogram standardization
 	- Clipping for CT is set to [-150,150] HU and for PET [0,20] SUV by default.
-	- Histogram standardization [[Paper](https://ieeexplore.ieee.org/document/836373) | [TorchIO implementation](https://torchio.readthedocs.io/transforms/preprocessing.html#histogramstandardization)]: Computing a mean histogram using the training samples, and distorting the histograms of the images to match this mean histogram using piece-wise linear contrast adjustment. To be done separately for PET and CT, obviously. 
+	- Clipping + Histogram standardization [[Histogram paper](https://ieeexplore.ieee.org/document/836373) | [TorchIO Histogram standardization](https://torchio.readthedocs.io/transforms/preprocessing.html#histogramstandardization)]: Computing a mean histogram using the training samples, and distorting the histograms of the images to match this mean histogram using piece-wise linear contrast adjustment. To be done separately for PET and CT, obviously. 
 
 3. Augmentation transform 
 	- Spatial: Random rotation(+-10 degrees), scaling(+-15%), elastic distortion.
@@ -53,10 +54,10 @@ Processing involved:
 	Min-max normalization, where min and max values are obtained from the volume.
 
 ### Patch Queue
-Custom code adapted from [TorchIO Queue](https://torchio.readthedocs.io/data/patch_training.html#id1) source code. The PatchQueue class is derived from torch.data.utils.Dataset and generates patch dictionaries given a patient dataset. Requires a custom patch sampler to sample valid patches from the volumes. Full volumes of the required number of patients as well as their sampled patched are cached. See the GIF on the linked page for working mechanism.
+Combined with a patch sampler, the patch queue creates, stores and returns randomly sampled paired input-output patches of given size. Code adapted from [TorchIO Queue](https://torchio.readthedocs.io/data/patch_training.html#id1) source code. The PatchQueue class is derived from torch.data.utils.Dataset. See the GIF on the linked page for working mechanism.
 
 ### Patch loader
-Regular torch dataloader used to create and load batch of patches. Takes the patch queue as its dataset. 
+Used with the patch queue to create batches of patches for training. Regular torch dataloader instance.
 
 
 ------------
