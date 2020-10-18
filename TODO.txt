@@ -1,7 +1,6 @@
 
-- Option for setting type of sampling in Patch Sampler -- uniform sampling (already exists), sampling volumes that contain the GTV, etc.
+- Option for setting type of sampling in Patch Sampler -- uniform sampling (implemented), sampling volumes that contain the GTV, etc.
 
 - Testing:
 	- Unimodality dataset
-	- SliceSampler
 	- Histogram stdn transform
