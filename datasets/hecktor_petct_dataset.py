@@ -118,7 +118,7 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 			# Provide PET and CT as 2 separate input tensors, each of shape (1,D,H,W). GTV mask will be of shape (D,H,W)
 			sample_dict = {'PET': np2tensor(PET_np).permute(2,1,0).unsqueeze(dim=0),
 	                       'CT': np2tensor(CT_np).permute(2,1,0).unsqueeze(dim=0),
-	                       'GTV-labelmap': np2tensor(GTV_labelmap_np).permute(2,1,0)
+	                       'GTV-labelmap': np2tensor(GTV_labelmap_np).permute(2,1,0).long()
 			              }
 
 		elif self.input_representation == 'multichannel-volume':

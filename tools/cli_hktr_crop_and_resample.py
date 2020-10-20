@@ -1,6 +1,6 @@
 """
 Script for cropping the images and resamping them.
-Physical coordinates for cropping are obtained from the bounding box CSV file. 
+Physical coordinates for cropping are obtained from the bounding box CSV file.
 Resampling is performed based on given voxel spacing.
 
 Adapted from github.com/voreille/hecktor
@@ -16,7 +16,7 @@ Adapted from github.com/voreille/hecktor
         resampled NIFTI files.
         BOUNDING_BOXES_FILE is the path of the .csv file containing the
         bounding boxes of each patient.
-    
+
 """
 
 import os
@@ -36,8 +36,8 @@ from hktr_resampling import Resampler, get_sitk_volume_from_np, get_np_volume_fr
 
 # Constants
 DEFAULT_SOURCE_DIR = "../../../Datasets/HECKTOR/hecktor_train/hecktor_nii"
-DEFAULT_TARGET_DIR = "../../../Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
-DEFAULT_BB_FILEPATH = "../hecktor_meta/bboxes_train_FH.csv"
+DEFAULT_TARGET_DIR = "../../../Datasets/HECKTOR/hecktor_train/crS_rs113_hecktor_nii"
+DEFAULT_BB_FILEPATH = "../hecktor_meta/crS_train-bboxes.csv"
 DEFAULT_NEW_SPACING = [1.0, 1.0, 3.0]  # New spacing to resample to in mm -- (W,H,D) format
 DEFAULT_CORES = 24
 DEFAULT_ORDER = 3
@@ -46,40 +46,40 @@ DEFAULT_ORDER = 3
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--source_dir", 
-                        type=str, 
+    parser.add_argument("--source_dir",
+                        type=str,
                         default=DEFAULT_SOURCE_DIR,
                         help="Directory containing patient folders"
                         )
 
-    parser.add_argument("--target_dir", 
-                        type=str, 
+    parser.add_argument("--target_dir",
+                        type=str,
                         default=DEFAULT_TARGET_DIR,
                         required=True,
                         help="Directory containing patient folders"
                         )
 
-    parser.add_argument("--bbox_filepath", 
-                        type=str, 
+    parser.add_argument("--bbox_filepath",
+                        type=str,
                         default=DEFAULT_BB_FILEPATH,
                         help="CSV file that contains bbox coordinates"
                         )
 
-    parser.add_argument("--new_spacing", 
-                        type=float, 
+    parser.add_argument("--new_spacing",
+                        type=float,
                         nargs=3,
                         default=DEFAULT_NEW_SPACING,
                         help="Voxel spacing the output images in mm -- (W,H,D) format"
                         )
 
-    parser.add_argument("--cores", 
-                        type=int, 
+    parser.add_argument("--cores",
+                        type=int,
                         default=DEFAULT_CORES,
                         help="Number of workers for parallelization"
                         )
 
-    parser.add_argument("--order", 
-                        type=int, 
+    parser.add_argument("--order",
+                        type=int,
                         default=DEFAULT_ORDER,
                         help="Order of the spline interpolation used to resample"
                         )

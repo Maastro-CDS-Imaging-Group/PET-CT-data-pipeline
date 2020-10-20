@@ -114,7 +114,7 @@ class HECKTORUnimodalDataset(torch.utils.data.Dataset):
 		# Construct the sample dict -- Convert to tensor and change dim ordering to (D,H,W).
 		# Input image will have shape (1,D,H,W). Target labelmap will have (D,H,W)
 		sample_dict = {self.input_modality: np2tensor(input_image_np).permute(2,1,0).unsqueeze(dim=0),
-                       'GTV-labelmap': np2tensor(GTV_labelmap_np).permute(2,1,0)
+                       'GTV-labelmap': np2tensor(GTV_labelmap_np).permute(2,1,0).long()
 		              }
 
 		return sample_dict

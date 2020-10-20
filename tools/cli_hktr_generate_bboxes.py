@@ -1,6 +1,6 @@
 """
 
-Script to automatically generate bounding boxes of given *physical* size by performing 
+Script to automatically generate bounding boxes of given *physical* size by performing
 brain segmentation in PET using SUV thresholding.
 
 Modified to contain full head (FH).
@@ -22,30 +22,33 @@ from scipy.ndimage.measurements import label
 
 # Constants
 DEFAULT_SOURCE_DIR = "../../../Datasets/HECKTOR/hecktor_train/hecktor_nii"
-DEFAULT_BB_FILEPATH = "../heck_meta/bboxes_train_FH.csv"
-DEFAULT_PHY_SIZE = [450.0, 450.0, 300.0] 
+DEFAULT_BB_FILEPATH = "../heck_meta/crS_train-bboxes.csv"
+
+DEFAULT_FULL_HEAD_NECK = 0   # 0-True, 1-False
+DEFAULT_FULL_HN_SIZE = (450.0, 450.0, 300.0) # Physical size in mm -- (W,H,D) format
+DEFAULT_SMALL_SIZE = (144.0, 144.0, 144.0) # Physical size in mm -- (W,H,D) format
 
 
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--source_dir", 
-                        type=str, 
+    parser.add_argument("--source_dir",
+                        type=str,
                         default=DEFAULT_SOURCE_DIR,
                         help="Directory containing patient folders"
                         )
 
-    parser.add_argument("--bbox_filepath", 
-                        type=str, 
+    parser.add_argument("--bbox_filepath",
+                        type=str,
                         default=DEFAULT_BB_FILEPATH,
                         help="Output CSV file that would contain bbox coordinates"
                         )
 
-    parser.add_argument("--output_phy_size", 
-                        type=float, 
-                        nargs=3,
-                        default=DEFAULT_PHY_SIZE,
-                        help="Required physical size for the output images in mm -- (W,H,D) format"
+    parser.add_argument("--full_head_neck",
+                        type=str,
+                        default=DEFAULT_FULL_HEAD_NECK,
+                        required=True,
+                        help="1-Yes, 0-No"
                         )
 
     args = parser.parse_args()
@@ -56,19 +59,23 @@ def get_args():
 def bbox_auto(np_pt,
               px_spacing_pt,
               px_origin_pt,
-              output_shape=(144, 144, 144),
+              full_head_neck=False,
               th=3):
     """Find a bounding box automatically based on the SUV
     Arguments:
         vol_pt {numpy array} -- The PET volume on which to compute the bounding box
-        px_spacing_pt {tuple of float} -- The spatial resolution of the PET volume 
-        px_origin_pt {tuple of float} -- The spatial position of the first voxel in the PET volume 
+        px_spacing_pt {tuple of float} -- The spatial resolution of the PET volume
+        px_origin_pt {tuple of float} -- The spatial position of the first voxel in the PET volume
     Keyword Arguments:
         shape {tuple} -- The ouput size of the bounding box in millimeters
         th {float} -- [description] (default: {3})
     Returns:
         [type] -- [description]
     """
+    if full_head_neck:
+        output_shape = DEFAULT_FULL_HN_SIZE
+    else:
+        output_shape = DEFAULT_SMALL_SIZE
 
     np_pt = np_pt.transpose((2,1,0)) # Custom hack
 
@@ -93,9 +100,13 @@ def bbox_auto(np_pt,
         labeled_array, _ = label(np_pt_thgauss)
         np_pt_brain = labeled_array == np.argmax(
             np.bincount(labeled_array[:,:,np_pt.shape[2] * 2 // 3:].flat)[1:]) + 1
+
     # Find lowest voxel of the brain and box containing the brain
-    # z = np.min(np.argwhere(np.sum(np_pt_brain, axis=(0, 1))))
-    z = np.max(np.argwhere(np.sum(np_pt_brain, axis=(0, 1))))  # Altered to find the *highest* voxel of the brain instead
+    if full_head_neck:
+        z = np.max(np.argwhere(np.sum(np_pt_brain, axis=(0, 1))))  # Altered to find the *highest* voxel of the brain instead
+    else:
+        z = np.min(np.argwhere(np.sum(np_pt_brain, axis=(0, 1))))  # Default - take the lowest voxel of the brain segmentation
+
     y1 = np.min(np.argwhere(np.sum(np_pt_brain, axis=(0, 2))))
     y2 = np.max(np.argwhere(np.sum(np_pt_brain, axis=(0, 2))))
     x1 = np.min(np.argwhere(np.sum(np_pt_brain, axis=(1, 2))))
@@ -136,7 +147,7 @@ def bbox_auto(np_pt,
     z_abs = z_pt * px_spacing_pt[2] + px_origin_pt[2]
     y_abs = y_pt * px_spacing_pt[1] + px_origin_pt[1]
     x_abs = x_pt * px_spacing_pt[0] + px_origin_pt[0]
-    
+
     bb = np.asarray((x_abs, y_abs, z_abs)).flatten()
     return bb
 
@@ -145,6 +156,7 @@ def bbox_auto(np_pt,
 def main(args):
     source_dir = args.source_dir
     patient_ids = sorted(os.listdir(source_dir))
+    full_head_neck = args.full_head_neck == 1
 
     bb_df = pd.DataFrame(
         columns=['PatientID', 'x1', 'x2', 'y1', 'y2', 'z1', 'z2'])
@@ -154,7 +166,7 @@ def main(args):
         pet_np = sitk.GetArrayFromImage(pet_sitk)
         spacing = pet_sitk.GetSpacing()
         origin = pet_sitk.GetOrigin()
-        bb = bbox_auto(pet_np, spacing, origin, args.output_phy_size)
+        bb = bbox_auto(pet_np, spacing, origin, full_head_neck)
         bb_df = bb_df.append(
             {
                 'PatientID': p_id,
