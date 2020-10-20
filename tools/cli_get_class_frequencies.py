@@ -5,10 +5,10 @@ import SimpleITK as sitk
 from tqdm import tqdm
 
 
-data_dir = "/home/chinmay/Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
+data_dir = "/home/zk315372/Chinmay/Datasets/HECKTOR/hecktor_train/crS_rs113_hecktor_nii"
 patient_id_filepath = "../hecktor_meta/patient_IDs_train.txt"
 
-output_file_path = "../hecktor_meta/class_frequencies_crFH_rs113_train.txt"
+output_file_path = "../hecktor_meta/default_small_crop/crS_rs113_train-class_frequencies.txt"
 
 
 with open(patient_id_filepath, 'r') as pf:

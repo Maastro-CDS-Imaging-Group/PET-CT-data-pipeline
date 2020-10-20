@@ -22,7 +22,7 @@ from scipy.ndimage.measurements import label
 
 # Constants
 DEFAULT_SOURCE_DIR = "../../../Datasets/HECKTOR/hecktor_train/hecktor_nii"
-DEFAULT_BB_FILEPATH = "../heck_meta/crS_train-bboxes.csv"
+DEFAULT_BB_FILEPATH = "../hecktor_meta/default_small_crop/crS_train-bboxes.csv"
 
 DEFAULT_FULL_HEAD_NECK = 0   # 0-True, 1-False
 DEFAULT_FULL_HN_SIZE = (450.0, 450.0, 300.0) # Physical size in mm -- (W,H,D) format

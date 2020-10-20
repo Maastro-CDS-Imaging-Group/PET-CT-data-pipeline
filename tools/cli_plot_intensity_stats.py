@@ -15,11 +15,11 @@ import SimpleITK as sitk
 
 
 # Constants
-DEFAULT_DATA_DIR = "/home/zk315372/Chinmay/Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
+DEFAULT_DATA_DIR = "/home/zk315372/Chinmay/Datasets/HECKTOR/hecktor_train/crS_rs113_hecktor_nii"
 DEFAULT_PATIENT_ID_FILE = "../hecktor_meta/patient_IDs_train.txt"
-DEFAULT_OUTPUT_DIR = "../hecktor_meta"
+DEFAULT_OUTPUT_DIR = "../hecktor_meta/default_small_crop"
 DEFAULT_HAS_SUBDIRS = 0
-DEFAULT_DATA_INFO = "train_crFH_rs113"
+DEFAULT_DATA_INFO = "crS_rs113_train"
 DEFAULT_HU_WINDOW = None
 DEFAULT_SUV_WINDOW = None
 
@@ -107,12 +107,12 @@ def main(args):
         # HU histogram
         CT_np = sitk.GetArrayFromImage(CT_sitk)
 
-        bin_size = 100
+        bin_size = 20
         if hu_window is None:
-            axs_ct[0].hist(CT_np.flatten(), bins=np.arange(-4500, 2000, bin_size), histtype='step')
+            CT_np = np.clip(CT_np, -1000, CT_np.max()) # Make non-valid region HU equal to air HU
+            axs_ct[0].hist(CT_np.flatten(), bins=np.arange(-1500, 2000, bin_size), histtype='step')
         else:
-            CT_np[CT_np < hu_window[0]] = hu_window[0]
-            CT_np[CT_np > hu_window[1]] = hu_window[1]
+            CT_np = np.clip(CT_np, hu_window[0], hu_window[1])
             x_axis_margin = 50
             axs_ct[0].hist(CT_np.flatten(), bins=np.arange(hu_window[0]-x_axis_margin, hu_window[1]+x_axis_margin, bin_size), histtype='step')
 
@@ -135,8 +135,7 @@ def main(args):
         if suv_window is None:
             axs_pet[0].hist(PET_np.flatten(), bins=np.arange(-1, 30, bin_size), histtype='step')
         else:
-            PET_np[PET_np < suv_window[0]] = suv_window[0]
-            PET_np[PET_np > suv_window[1]] = suv_window[1]
+            PET_np = np.clip(PET_np, suv_window[0], suv_window[1])
             x_axis_margin = 1
             axs_pet[0].hist(PET_np.flatten(), bins=np.arange(suv_window[0]-x_axis_margin, suv_window[1]+x_axis_margin, bin_size), histtype='step')
 

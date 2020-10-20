@@ -32,12 +32,12 @@ from scipy.interpolate import RegularGridInterpolator
 import SimpleITK as sitk
 
 
-from hktr_resampling import Resampler, get_sitk_volume_from_np, get_np_volume_from_sitk
+from hktr_resampling_utils import Resampler, get_sitk_volume_from_np, get_np_volume_from_sitk
 
 # Constants
 DEFAULT_SOURCE_DIR = "../../../Datasets/HECKTOR/hecktor_train/hecktor_nii"
 DEFAULT_TARGET_DIR = "../../../Datasets/HECKTOR/hecktor_train/crS_rs113_hecktor_nii"
-DEFAULT_BB_FILEPATH = "../hecktor_meta/crS_train-bboxes.csv"
+DEFAULT_BB_FILEPATH = "../hecktor_meta/default_small_crop/crS_train-bboxes.csv"
 DEFAULT_NEW_SPACING = [1.0, 1.0, 3.0]  # New spacing to resample to in mm -- (W,H,D) format
 DEFAULT_CORES = 24
 DEFAULT_ORDER = 3

@@ -1,6 +1,6 @@
 """
 
-Obtain counts for voxel spacing and array sizes for all *original* CT and PET images form HECKTOR dataset.
+Obtain counts for voxel spacing and array sizes for all *original* CT and PET images from HECKTOR dataset.
 
 """
 
@@ -13,11 +13,11 @@ import SimpleITK as sitk
 
 
 # Constants
-DEFAULT_DATA_DIR = "../../../Datasets/HECKTOR/hecktor_train/hecktor_nii"
+DEFAULT_DATA_DIR = "../../../Datasets/HECKTOR/hecktor_train/crS_rs113_hecktor_nii"
 DEFAULT_PATIENT_ID_FILE = "../hecktor_meta/patient_IDs_train.txt"
-DEFAULT_OUTPUT_FILE = "../hecktor_meta/hecktor_train_stats.txt"
-DEFAULT_HAS_SUBDIRS = 1
-DEFAULT_DATA_INFO = "train"
+DEFAULT_OUTPUT_FILE = "../hecktor_meta/default_small_crop/crS_rs113_train-spatial_stats.txt"
+DEFAULT_HAS_SUBDIRS = 0
+DEFAULT_DATA_INFO = "crS_rs113_train"
 
 
 def get_args():
@@ -50,7 +50,7 @@ def get_args():
     parser.add_argument("--data_info", 
                         type=str,
                         default=DEFAULT_DATA_INFO,
-                        help="Options: train, test, train_crFH_rs113, test_crFH_rs113, etc."
+                        help="Options: train, test, crFHN_rs113_train, crFHN_rs113_test, crS_rs113_train, crS_rs113_test."
                         )
 
     args = parser.parse_args()

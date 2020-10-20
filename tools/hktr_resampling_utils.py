@@ -81,7 +81,7 @@ def resample_and_crop(input_file,
     # writer.SetFileName(output_file)
     # writer.SetImageIO("NiftiImageIO")
     # writer.Execute(sitk_volume)
-    sitk.WriteImage(sitk_volume, output_file, useCompression=True)
+    sitk.WriteImage(sitk_volume, output_file)
 
 
 def resample_np_volume(np_volume,

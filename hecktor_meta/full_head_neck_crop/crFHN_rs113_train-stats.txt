@@ -1,4 +1,4 @@
-Dataset: train_crFH_rs113
+Dataset: crFHN_rs113_train
 
 CT x-y spacing counts: {1.0: 201}
 CT z spacing counts: {3.0: 201}
