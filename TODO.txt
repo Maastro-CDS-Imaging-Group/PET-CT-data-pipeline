@@ -2,6 +2,7 @@
 - Option for setting type of sampling in Patch Sampler -- uniform sampling (implemented), sequential sampling (implemented), sampling patches that contain the GTV, etc.
 
 x Add meshgrid for sequential sampling for both 2d and 3d samplers
+x Implement focal_point_stride in patch samplers to enable setting the patch overlap amount. Test it.
 x Test get_num_valid_patches() function  
 
 - Testing:
