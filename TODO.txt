@@ -5,8 +5,11 @@ x Add meshgrid for sequential sampling for both 2d and 3d samplers
 x Implement focal_point_stride in patch samplers to enable setting the patch overlap amount. Test it.
 x Test get_num_valid_patches() function  
 
+- Combine patch samplers into a single class
+
 - Testing:
-	x Unimodality dataset
 	- Histogram stdn transform
 
-- Prepare the crS_rs113 dataset. Generate all meta info
+- Patch aggregator for inference
+	x Tested with no overlap handling, works
+	- Fix 'union' overlap handing

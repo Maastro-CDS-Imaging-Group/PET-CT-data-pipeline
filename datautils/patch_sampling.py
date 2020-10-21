@@ -216,8 +216,6 @@ class PatchQueue(Dataset):
         return iter(subjects_loader)
 
 
-
-
 def get_num_valid_patches(patch_size, volume_size=(450,450,100), focal_point_stride=(1,1,1)):
 
     # Convert to (D,H,W) ordering.   [ (H,W) for patch_size and focal_point_stride if theu are 2D ]
