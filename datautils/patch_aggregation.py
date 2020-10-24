@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 
 class PatchAggregator3D():
@@ -44,15 +45,15 @@ class PatchAggregator3D():
         return valid_focal_points
 
 
-    def aggregate(self, patches_list):
+    def aggregate(self, patches_list, device='cpu'):
         """
         Args:
-            patches_list: List of numpy arrays. Shape of the each array is in (D,H,W) ordering
+            patches_list: List of torch tensors arrays. Shape of the each array is in (D,H,W) ordering
         Returns:
-            full_volume: Aggregated from the patches. shape has dim (D,H,W) ordering
+            full_volume: Tensor. Aggregated from the patches. Shape has dim (D,H,W) ordering
         """
         # Define a zeros array of shape volume_size
-        full_volume = np.zeros(self.volume_size)
+        full_volume = torch.zeros(self.volume_size, device=device)
 
         patch_size = np.array(self.patch_size)
 
@@ -69,15 +70,40 @@ class PatchAggregator3D():
                 full_volume[z1:z2, y1:y2, x1:x2] = patch
 
             elif self.overlap_handling == 'union':
-                full_volume_copy = full_volume.copy()
-                full_volume[z1:z2, y1:y2, x1:x2] = patch
-                full_volume = np.maximum(full_volume, full_volume_copy)
+                full_volume_copy = full_volume.clone().detach()
+                full_volume[z1:z2, y1:y2, x1:x2] = patch.clone()
+                full_volume = torch.max(full_volume, full_volume_copy)
 
         # If padding was used during patch sampling, remove it from the full volume
         if self.unpadding > 0:
             full_volume = full_volume[:-self.unpadding, :-self.unpadding, :-self.unpadding]
 
         return full_volume
+
+
+
+def get_pred_labelmap_patches_list(pred_prob_patches):
+    """
+    Get a list of predicted labelmap patches from the the model's predicted batch of probabilities patches
+
+    Args:
+        pred_prob_patches: Tensor. Batch of predicted probabilites patches. Shape (N,C,D,H,W)
+    Returns:
+        pred_labelmap_patches_list: List (length N) of tensors. Each element is a tensor of shape (D,H,W)
+    """
+    pred_labelmap_patches_list = []
+
+    for i in range(pred_prob_patches.shape[0]):
+
+        # Convert to numpy, collapse channel dim for the predicted patch
+        pred_patch = pred_prob_patches[i] # Shape (C,D,H,W)
+        pred_patch = pred_patch.argmax(dim=0)  # Shape (D,H,W)
+
+        # Accumulate in the list
+        pred_labelmap_patches_list.append(pred_patch)
+
+    return pred_labelmap_patches_list
+
 
 
 
