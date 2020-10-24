@@ -11,7 +11,7 @@ x Test get_num_valid_patches() function
 	- Histogram stdn transform
 
 - Patch aggregator for inference
-	- Test the aggregator in the notebook again, since the input dim ordering was changed
+	x Test the aggregator in the notebook again, since the input dim ordering was changed. Test using Dice score too
 	x Tested with no overlap handling, works
-	- Fix 'union' overlap handing
-	- Test 'intersection' overlap handling
+	x Fix 'union' overlap handing
+	- Test 'union' thoroughly
