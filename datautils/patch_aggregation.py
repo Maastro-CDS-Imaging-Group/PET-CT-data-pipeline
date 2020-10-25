@@ -3,7 +3,7 @@ import torch
 
 
 class PatchAggregator3D():
-    def __init__(self, patch_size=(128,128,32), volume_size=(144,144,48), focal_point_stride=(5,5,5), overlap_handling=None, unpadding=0):
+    def __init__(self, patch_size=[128,128,32], volume_size=[144,144,48], focal_point_stride=[5,5,5], overlap_handling=None, unpadding=[0,0,0]):
 
         """
         All arguments are apecified in (W,H,D) format
@@ -19,11 +19,12 @@ class PatchAggregator3D():
         self.focal_point_stride.reverse()
 
         self.overlap_handling = overlap_handling  # None or 'union'
-        self.unpadding = unpadding
+
+        self.unpadding = list(unpadding)
+        self.unpadding.reverse()
 
         # Increase the volume size to account for the padding used during patch sampling
-        if unpadding > 0:
-            self.volume_size = [s + unpadding for s in self.volume_size] # (D,H,W)
+        self.volume_size = [self.volume_size[i] + self.unpadding[i] for i in range(3)] # (D,H,W)
 
         self.valid_focal_points = self._get_valid_focal_points() # Valid focal points in volume coordinates
 
@@ -71,12 +72,12 @@ class PatchAggregator3D():
 
             elif self.overlap_handling == 'union':
                 full_volume_copy = full_volume.clone().detach()
-                full_volume[z1:z2, y1:y2, x1:x2] = patch.clone()
+                full_volume[z1:z2, y1:y2, x1:x2] = patch.clone().detach()
                 full_volume = torch.max(full_volume, full_volume_copy)
 
         # If padding was used during patch sampling, remove it from the full volume
-        if self.unpadding > 0:
-            full_volume = full_volume[:-self.unpadding, :-self.unpadding, :-self.unpadding]
+        if self.unpadding != [0,0,0]:
+            full_volume = full_volume[:-self.unpadding[0], :-self.unpadding[1], :-self.unpadding[2]].clone().detach()
 
         return full_volume
 
@@ -141,8 +142,10 @@ if __name__ == '__main__':
     # Arguments specified in (W,H,D) ordering
     volume_size = (144,144,48)
     patch_size = (128,128,32)
-    focal_point_stride = (20,20,20)
-    padding = 4
+    focal_point_stride = (60,60,20)
+    padding = (44,44,4)
+    focal_point_stride = (10,10,10)
+    padding = (0,0,0)
 
     patch_sampler = PatchSampler3D(patch_size,
                                    sampling='sequential',
@@ -160,6 +163,7 @@ if __name__ == '__main__':
 
     # (D,H,W) order followed internally
     random_labelmap = np.random.randint(low=0, high=2, size=(volume_size[2], volume_size[1], volume_size[0]))
+    #print(random_labelmap.shape)
 
     patches_list = patch_sampler.get_samples(subject_dict={'GTV-labelmap': torch.from_numpy(random_labelmap)},
                                     num_patches=num_valid_patches)
@@ -168,10 +172,13 @@ if __name__ == '__main__':
 
     recovered_labelmap = patch_aggregator.aggregate(patches_list)
 
+    #print(random_labelmap.shape)
+
 
     def dice(labelmap_1, labelmap_2):
+        assert labelmap_1.shape == labelmap_2.shape
         intersection = np.sum(labelmap_1 * labelmap_2)
         dice_score = 2 * intersection / (np.sum(labelmap_1) + np.sum(labelmap_2))
         return dice_score
 
-    print(dice(random_labelmap, recovered_labelmap))
+    print(dice(random_labelmap, recovered_labelmap.numpy()))
