@@ -115,15 +115,15 @@ def get_pred_labelmap_patches_list(pred_prob_patches):
     Args:
         pred_prob_patches: Tensor. Batch of predicted probabilites patches. Shape (N,C,D,H,W)
     Returns:
-        pred_labelmap_patches_list: List of length N. Each element is a tensor of hape (D,H,W)
+        pred_labelmap_patches_list: List of length N. Each element is a tensor of shape (D,H,W)
     """
     pred_labelmap_patches_list = []
 
     for i in range(pred_prob_patches.shape[0]):
 
         # Convert to numpy, collapse channel dim for the predicted patch
-        pred_patch = pred_prob_patches[i].numpy() # Shape (C,D,H,W)
-        pred_patch = np.argmax(pred_patch, axis=0)  # Shape (D,H,W)
+        pred_patch = pred_prob_patches[i] # Shape (C,D,H,W)
+        pred_patch = pred_patch.argmax(dim=0)  # Shape (D,H,W)
 
         # Accumulate in the list
         pred_labelmap_patches_list.append(pred_patch)
@@ -165,10 +165,10 @@ if __name__ == '__main__':
     random_labelmap = np.random.randint(low=0, high=2, size=(volume_size[2], volume_size[1], volume_size[0]))
     #print(random_labelmap.shape)
 
-    patches_list = patch_sampler.get_samples(subject_dict={'GTV-labelmap': torch.from_numpy(random_labelmap)},
+    patches_list = patch_sampler.get_samples(subject_dict={'target-labelmap': torch.from_numpy(random_labelmap)},
                                     num_patches=num_valid_patches)
 
-    patches_list = [patch['GTV-labelmap'] for patch in patches_list]
+    patches_list = [patch['target-labelmap'] for patch in patches_list]
 
     recovered_labelmap = patch_aggregator.aggregate(patches_list)
 

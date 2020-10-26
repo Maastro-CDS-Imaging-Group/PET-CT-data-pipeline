@@ -4,34 +4,29 @@ from tqdm import tqdm
 import SimpleITK as sitk
 
 
-DEFAULT_DATA_DIR = "/home/chinmay/Datasets/HECKTOR/hecktor_train/crFH_rs113_hecktor_nii"
+DEFAULT_DATA_DIR = "/home/chinmay/Datasets/HECKTOR/hecktor_train/crS_rs113_hecktor_nii"
 DEFAULT_PATIENT_ID_FILE = "../hecktor_meta/patient_IDs_train.txt"
-DEFAULT_OUTPUT_DIR = "../hecktor_meta"
+DEFAULT_OUTPUT_DIR = "../hecktor_meta/default_small_crop"
 DEFAULT_MODALITY = "PET"
 
 
 # Histogram related constants
-DEFAULT_QUANTILES_CUTOFF_SUV = (0, 1)
-STANDARD_RANGE_SUV = (0, 20)
-DEFAULT_QUANTILES_CUTOFF_HU = (0, 1)
-STANDARD_RANGE_HU = (-150, 150)
+DEFAULT_QUANTILES_CUTOFF_SUV = (0, 0.999)
+DEFAULT_QUANTILES_CUTOFF_HU = (0, 0.999)
 
-CLIP_RANGE_SUV = [0,20]
-CLIP_RANGE_HU = [-150, 150]
+STANDARD_INTENSITY_RANGE = (0, 1)
 
 
 class StandardHistogramTrainer():
     def __init__(self, modality='PET', quantiles_cutoff=None, images_paths=None):
+        self.standard_scale = STANDARD_INTENSITY_RANGE
+
         self.modality = modality
 
         if self.modality == 'PET':
-            self.clip_range = CLIP_RANGE_SUV
             self.quantiles_cutoff = DEFAULT_QUANTILES_CUTOFF_SUV
-            self.standard_scale = STANDARD_RANGE_SUV
         elif self.modality == 'CT':
-            self.clip_range = CLIP_RANGE_HU
             self.quantiles_cutoff = DEFAULT_QUANTILES_CUTOFF_HU
-            self.standard_scale = STANDARD_RANGE_HU
 
         self.images_paths = images_paths
 
@@ -44,8 +39,14 @@ class StandardHistogramTrainer():
             image_sitk = sitk.ReadImage(image_file_path)
             image_np = sitk.GetArrayFromImage(image_sitk)
 
-            # Clip the image first to keep intensities in the required range
-            image_np = np.clip(image_np, self.clip_range[0], self.clip_range[1])
+            # If CT, then make the background HU same as air HU (i.e. -1000)
+            if self.modality == 'CT':
+                image_np = np.clip(image_np, -1000, image_np.max())
+
+            # If PET, then make invalid (negative) SUVs equal to 0
+            if self.modality == 'PET':
+                image_np = np.clip(image_np, 0, image_np.max())
+
 
             # Get percentile values and store them
             percentile_values = np.percentile(image_np, percentiles)
@@ -113,13 +114,13 @@ def main(args):
         patient_PET_paths = [f"{args.data_dir}/{p_id}_pt.nii.gz" for p_id in patient_ids]
         histogram_trainer = StandardHistogramTrainer(modality='PET', images_paths=patient_PET_paths)
         PET_landmarks = histogram_trainer.train()
-        np.savetxt(f"{args.output_dir}/hist_landmarks_PET.txt", PET_landmarks)
+        np.savetxt(f"{args.output_dir}/crS_rs113_train-hist_landmarks_PET.txt", PET_landmarks)
 
     elif args.modality == 'CT':
         patient_CT_paths = [f"{args.data_dir}/{p_id}_ct.nii.gz" for p_id in patient_ids]
         histogram_trainer = StandardHistogramTrainer(modality='CT', images_paths=patient_CT_paths)
         CT_landmarks = histogram_trainer.train()
-        np.savetxt(f"{args.output_dir}/hist_landmarks_CT.txt", CT_landmarks)
+        np.savetxt(f"{args.output_dir}/crS_rs113_train-hist_landmarks_CT.txt", CT_landmarks)
 
 
 if __name__ == '__main__':

@@ -16,7 +16,7 @@ class NdimageVisualizer():
         self.suv_window = {'level':3, 'width':5}
         self.hu_window = {'level':0, 'width':300}
 
-        self.cmap_dict = {'PET': 'gist_rainbow', 'CT': 'gray', 'GTV-labelmap': 'gray'}
+        self.cmap_dict = {'PET': 'gist_rainbow', 'CT': 'gray', 'target-labelmap': 'gray'}
         self.dpi = 80
 
 
@@ -28,7 +28,7 @@ class NdimageVisualizer():
 
     def _custom_imshow(self, ax, image, title, modality):
         # Apply window
-        if modality == 'GTV-labelmap':
+        if modality == 'target-labelmap':
             ax.imshow(image, cmap=self.cmap_dict[modality])
 
         else:
