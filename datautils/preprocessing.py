@@ -52,7 +52,7 @@ class Preprocessor():
     def normalize_intensity(self, image_np, modality):
         if self.normalization_method[modality] == 'clip-and-rescale':
             image_np = self._clip(image_np, modality)
-            image_np = (image_np - image_np.min()) / (image_np.max() - image_np.min()) # Min-max rescaling
+            #image_np = (image_np - image_np.min()) / (image_np.max() - image_np.min()) # Min-max rescaling
 
         elif self.normalization_method[modality] == 'histogram-mapping':
             image_np = self._histogram_transform(image_np, modality)

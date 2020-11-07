@@ -8,6 +8,7 @@ Note: Distribution is relevant only *after* resampling all images to common voxe
 
 import os, argparse
 import numpy as np
+from scipy import stats
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
@@ -15,13 +16,14 @@ import SimpleITK as sitk
 
 
 # Constants
-DEFAULT_DATA_DIR = "/home/zk315372/Chinmay/Datasets/HECKTOR/hecktor_train/crS_rs113_hecktor_nii"
+DEFAULT_DATA_DIR = "/home/chinmay/Datasets/HECKTOR/hecktor_train/crFHN_rs113_hecktor_nii"
 DEFAULT_PATIENT_ID_FILE = "../hecktor_meta/patient_IDs_train.txt"
-DEFAULT_OUTPUT_DIR = "../hecktor_meta/default_small_crop"
+DEFAULT_OUTPUT_DIR = "../hecktor_meta/full_head_neck_crop"
 DEFAULT_HAS_SUBDIRS = 0
-DEFAULT_DATA_INFO = "crS_rs113_train"
+DEFAULT_DATA_INFO = "crFHN_rs113_train"
 DEFAULT_HU_WINDOW = None
 DEFAULT_SUV_WINDOW = None
+DEFAULT_PLOT_KDE = 0
 
 
 def get_args():
@@ -70,6 +72,11 @@ def get_args():
                         default=DEFAULT_SUV_WINDOW,
                         help="SUV window to apply to the PET images before plotting the distribution: [win_lo, win_hi]")
 
+    parser.add_argument("--plot_kde",
+                        type=int,
+                        default=DEFAULT_PLOT_KDE,
+                        help="0: No, 1: Yes")
+
     args = parser.parse_args()
     return args
 
@@ -83,12 +90,13 @@ def main(args):
     has_subdirs = args.has_subdirs == 1
     hu_window = args.hu_window
     suv_window = args.suv_window
+    plot_kde = args.plot_kde == 1
 
     with open(patient_id_file, 'r') as pf:
         patient_ids = [p_id for p_id in pf.read().split("\n") if p_id != ""]
 
-    fig_ct, axs_ct = plt.subplots(2, 1, figsize=(20,20))
-    fig_pet, axs_pet = plt.subplots(2, 1, figsize=(20,20))
+    fig_ct, axs_ct = plt.subplots(2, 1, figsize=(10,10))
+    fig_pet, axs_pet = plt.subplots(2, 1, figsize=(10,10))
 
     # To find the max and min values across all images
     HU_minmax_dict = {}
@@ -110,7 +118,14 @@ def main(args):
         bin_size = 20
         if hu_window is None:
             CT_np = np.clip(CT_np, -1000, CT_np.max()) # Make non-valid region HU equal to air HU
-            axs_ct[0].hist(CT_np.flatten(), bins=np.arange(-1500, 2000, bin_size), histtype='step')
+
+            if plot_kde:
+                kde = stats.gaussian_kde(CT_np.flatten())
+                x_range = np.linspace(-1500, 2000, 3500)
+                axs_ct[0].plot(x_range, kde(x_range))
+            else:
+                axs_ct[0].hist(CT_np.flatten(), bins=np.arange(-1500, 2000, bin_size), histtype='step')
+
         else:
             CT_np = np.clip(CT_np, hu_window[0], hu_window[1])
             x_axis_margin = 50
@@ -133,7 +148,14 @@ def main(args):
 
         bin_size = 0.25
         if suv_window is None:
-            axs_pet[0].hist(PET_np.flatten(), bins=np.arange(-1, 30, bin_size), histtype='step')
+
+            if plot_kde:
+                kde = stats.gaussian_kde(PET_np.flatten())
+                x_range = np.linspace(-1, 20, 1000)
+                axs_pet[0].plot(x_range, kde(x_range))
+            else:
+                axs_pet[0].hist(PET_np.flatten(), bins=np.arange(-1, 30, bin_size), histtype='step')
+
         else:
             PET_np = np.clip(PET_np, suv_window[0], suv_window[1])
             x_axis_margin = 1
@@ -171,15 +193,15 @@ def main(args):
 
     # Save plots
     if hu_window is None:
-        output_filepath = f"{output_dir}/hecktor_{data_info}_CT_hist.png"
+        output_filepath = f"{output_dir}/{data_info}-CT_intensity_stats.png"
     else:
-        output_filepath = f"{output_dir}/hecktor_{data_info}_CT_win_hist.png"
+        output_filepath = f"{output_dir}/{data_info}-CT_intensity_stats_win.png"
     fig_ct.savefig(output_filepath)
 
     if suv_window is None:
-        output_filepath = f"{output_dir}/hecktor_{data_info}_PET_hist.png"
+        output_filepath = f"{output_dir}/{data_info}-PET_intensity_stats.png"
     else:
-        output_filepath = f"{output_dir}/hecktor_{data_info}_PET_win_hist.png"
+        output_filepath = f"{output_dir}/{data_info}-PET_intensity_stats_win.png"
     fig_pet.savefig(output_filepath)
 
     print("done")
