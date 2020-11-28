@@ -8,7 +8,7 @@ DEFAULT_DATA_DIR = "/home/chinmay/Datasets/HECKTOR/hecktor_train/crS_rs113_heckt
 DEFAULT_PATIENT_ID_FILE = "../hecktor_meta/patient_IDs_train.txt"
 DEFAULT_OUTPUT_DIR = "../hecktor_meta/default_small_crop"
 DEFAULT_MODALITY = "PET"
-
+DEFAULT_CROSSVAL_CENTRE = "None"
 
 # Histogram related constants
 DEFAULT_QUANTILES_CUTOFF_SUV = (0, 0.999)
@@ -97,30 +97,42 @@ def get_args():
                         )
     parser.add_argument("--modality",
                         type=str,
-                        required=True,
                         default=DEFAULT_MODALITY,
                         help="'PET' or 'CT'"
                         )
+    parser.add_argument("--crossval_centre",
+                        type=str,
+                        required=True,
+                        default=DEFAULT_CROSSVAL_CENTRE,
+                        help="CHGJ, CHMR, CHUM, CHUS, None"
+                        )
+
     args = parser.parse_args()
     return args
 
 
 def main(args):
 
+    print("Modality:", args.modality)
+    print("Crossval split:", args.crossval_centre)
+
     with open(args.patient_id_file, 'r') as pf:
         patient_ids = [p_id for p_id in pf.read().split("\n") if p_id != ""]
+
+    if args.crossval_centre != "None":
+        patient_ids = [p_id for p_id in patient_ids if args.crossval_centre not in p_id]
 
     if args.modality == 'PET':
         patient_PET_paths = [f"{args.data_dir}/{p_id}_pt.nii.gz" for p_id in patient_ids]
         histogram_trainer = StandardHistogramTrainer(modality='PET', images_paths=patient_PET_paths)
         PET_landmarks = histogram_trainer.train()
-        np.savetxt(f"{args.output_dir}/crS_rs113_train-hist_landmarks_PET.txt", PET_landmarks)
+        np.savetxt(f"{args.output_dir}/crossval_{args.crossval_centre}-histogram_landmarks_PET.txt", PET_landmarks)
 
     elif args.modality == 'CT':
         patient_CT_paths = [f"{args.data_dir}/{p_id}_ct.nii.gz" for p_id in patient_ids]
         histogram_trainer = StandardHistogramTrainer(modality='CT', images_paths=patient_CT_paths)
         CT_landmarks = histogram_trainer.train()
-        np.savetxt(f"{args.output_dir}/crS_rs113_train-hist_landmarks_CT.txt", CT_landmarks)
+        np.savetxt(f"{args.output_dir}/crossval_{args.crossval_centre}-histogram_landmarks_CT.txt", CT_landmarks)
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ import torch
 import torchio
 import SimpleITK as sitk
 
-sys.path.append("../")
+# sys.path.append("../")
 from datautils.conversion import *
 import datautils.transforms as transforms
 
@@ -38,6 +38,11 @@ class HECKTORPETCTDataset(torch.utils.data.Dataset):
 		self.data_dir = data_dir
 		with open(patient_id_filepath, 'r') as pf:
 			self.patient_ids = [p_id for p_id in pf.read().split('\n') if p_id != '']
+
+			# Correction for crS
+			if "crS_rs113" in self.data_dir:
+				self.patient_ids.remove("CHUM010")
+				self.patient_ids.remove("CHUS021")
 
 		self.mode = mode
 

@@ -16,7 +16,7 @@ class NdimageVisualizer():
         self.suv_window = {'level':3, 'width':5}
         self.hu_window = {'level':0, 'width':300}
 
-        self.cmap_dict = {'PET': 'gist_rainbow', 'CT': 'gray', 'target-labelmap': 'gray'}
+        self.cmap_dict = {'PET': 'gist_rainbow', 'CT': 'gray', 'labelmap': 'gray', 'normalized': 'gray'}
         self.dpi = 80
 
 
@@ -26,25 +26,25 @@ class NdimageVisualizer():
     def set_hu_window(self, window):
         self.hu_window = window
 
-    def _custom_imshow(self, ax, image, title, modality):
+    def _custom_imshow(self, ax, image, title, image_type):
         # Apply window
-        if modality == 'target-labelmap':
-            ax.imshow(image, cmap=self.cmap_dict[modality])
+        if image_type == 'labelmap' or image_type == 'normalized':
+            ax.imshow(image, cmap=self.cmap_dict[image_type])
 
         else:
-            if modality == 'PET':
+            if image_type == 'PET':
                 window = self.suv_window
-            elif modality == 'CT':
+            elif image_type == 'CT':
                 window = self.hu_window
             win_min = window['level'] - window['width'] // 2
             win_max = window['level'] + window['width'] // 2
-            ax.imshow(image, cmap=self.cmap_dict[modality], vmin=win_min, vmax=win_max)
+            ax.imshow(image, cmap=self.cmap_dict[image_type], vmin=win_min, vmax=win_max)
 
         ax.set_title(title)
         ax.axis('off')
 
 
-    def multi_image_strips(self, image_np_list, modalities, idx_range, view='axial', subtitles=[], title=""):
+    def multi_image_strips(self, image_np_list, image_types, idx_range, view='axial', subtitles=[], title=""):
         array_size = image_np_list[0].shape
         phy_size = [int(array_size[i]*self.spacing[i]) for i in range(3)]
 
@@ -52,7 +52,7 @@ class NdimageVisualizer():
         figsize = (n_images*450)/self.dpi, ((idx_range[1]-idx_range[0])*450)/self.dpi
         fig, axs = plt.subplots(1, n_images, figsize=figsize)
 
-        if len(subtitles) != n_images: subtitles = modalities
+        if len(subtitles) != n_images: subtitles = image_types
 
         if view == 'axial':
             for i, image_np in enumerate(image_np_list):
@@ -61,7 +61,7 @@ class NdimageVisualizer():
                     axial_slice = image_np[:, :, s].T
                     slice_list.append(axial_slice)
                 strip = np.concatenate(slice_list, axis=0)
-                self._custom_imshow(axs[i], strip, title=subtitles[i], modality=modalities[i])
+                self._custom_imshow(axs[i], strip, title=subtitles[i], image_type=image_types[i])
 
         if view == 'coronal':
             for i, image_np in enumerate(image_np_list):
@@ -73,7 +73,7 @@ class NdimageVisualizer():
                     coronal_slice = scipy.ndimage.zoom(coronal_slice, [3,1], order=1)
                     slice_list.append(coronal_slice)
                 strip = np.concatenate(slice_list, axis=0)
-                self._custom_imshow(axs[i], strip, title=subtitles[i], modality=modalities[i])
+                self._custom_imshow(axs[i], strip, title=subtitles[i], image_type=image_types[i])
 
         if view == 'sagittal':
             for i, image_np in enumerate(image_np_list):
@@ -84,14 +84,14 @@ class NdimageVisualizer():
                     sagittal_slice = scipy.ndimage.zoom(sagittal_slice, [3,1], order=1)
                     slice_list.append(sagittal_slice)
                 strip = np.concatenate(slice_list, axis=0)
-                self._custom_imshow(axs[i], strip, title=subtitles[i], modality=modalities[i])
+                self._custom_imshow(axs[i], strip, title=subtitles[i], image_type=image_types[i])
 
         # Display
         fig.suptitle(title, fontsize='x-large')
         plt.show()
 
 
-    def grid(self, image_np, idx_range, view='axial', modality='PET', title=''):
+    def grid(self, image_np, idx_range, view='axial', image_type='PET', title=''):
         array_size = image_np.shape
         phy_size = [int(array_size[i]*self.spacing[i]) for i in range(3)]
         w_phy, h_phy, d_phy = phy_size
@@ -150,7 +150,7 @@ class NdimageVisualizer():
         # Display
         figsize = (5*400)/self.dpi, ((idx_range[1]-idx_range[0])/5*400)/self.dpi
         fig, ax = plt.subplots(figsize=figsize)
-        self._custom_imshow(ax, grid_image, title=title, modality=modality)
+        self._custom_imshow(ax, grid_image, title=title, image_type=image_type)
         plt.show()
 
 
