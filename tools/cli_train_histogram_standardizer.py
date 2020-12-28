@@ -4,11 +4,11 @@ from tqdm import tqdm
 import SimpleITK as sitk
 
 
-DEFAULT_DATA_DIR = "/home/chinmay/Datasets/HECKTOR/hecktor_train/crS_rs113_hecktor_nii"
+DEFAULT_DATA_DIR = "/home/chinmay/Datasets/HECKTOR/hecktor_train/crFHN_rs113_hecktor_nii"
 DEFAULT_PATIENT_ID_FILE = "../hecktor_meta/patient_IDs_train.txt"
-DEFAULT_OUTPUT_DIR = "../hecktor_meta/default_small_crop"
+DEFAULT_OUTPUT_DIR = "../hecktor_meta/full_head_neck_crop"
 DEFAULT_MODALITY = "PET"
-DEFAULT_CROSSVAL_CENTRE = "None"
+DEFAULT_CROSSVAL_CENTRE = "CHUM"
 
 # Histogram related constants
 DEFAULT_QUANTILES_CUTOFF_SUV = (0, 0.999)

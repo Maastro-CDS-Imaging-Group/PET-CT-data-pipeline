@@ -109,7 +109,7 @@ class PatchSampler3D():
             random_indxs = np.random.choice(len(focal_points), size=num_patches, replace=False)
             focal_points = [focal_points[i] for i in random_indxs]
 
-        elif self.sampling == 'high-suv-biased-random':
+        elif self.sampling == 'suv-weighted-random':
             '''
             Random sampling, biased to high SUV regions in PET
             '''
@@ -127,7 +127,7 @@ class PatchSampler3D():
             # Sample focal points using this probability map
             focal_points = self._sample_from_probability_map(num_patches, sampling_prob_map, valid_indx_range)
 
-        elif self.sampling == 'gtv-biased-fg-random':
+        elif self.sampling == 'gtv-petfg-weighted-random':
             '''
             Random sampling from PET foreground, biased to patches containing GTV
             '''
