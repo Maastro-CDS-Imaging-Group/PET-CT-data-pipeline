@@ -1,10 +1,6 @@
 # Notebooks, scripts and utilities for PET-CT data processing
 
-For segmentation of Head-and-Neck gross tumour volume using deep-learning based PET and CT information fusion.
-
-
-## Repository structure
-TODO
+For segmentation of Head-and-Neck gross tumor volume using deep learning-based PET-CT fusion models.
 
 
 ------------
